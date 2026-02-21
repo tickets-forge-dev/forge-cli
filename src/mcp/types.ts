@@ -11,3 +11,14 @@ export interface ToolResult {
   content: TextContent[];
   isError?: boolean;
 }
+
+export interface PromptMessage {
+  role: 'user' | 'assistant';
+  content: TextContent;
+}
+
+export interface PromptResult {
+  messages?: PromptMessage[];
+  isError?: boolean;
+  content?: TextContent[];
+}

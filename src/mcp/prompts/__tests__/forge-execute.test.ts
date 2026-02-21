@@ -1,0 +1,189 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('../../agents/dev-executor.md', () => ({
+  default: '# Dev Executor Agent\n## Persona\nYou are a Forge dev executor.\n## Principles\n## Process\n## Code Quality Rules\n',
+}));
+
+vi.mock('../../../services/api.service', () => ({
+  get: vi.fn(),
+}));
+
+import { get } from '../../../services/api.service';
+import {
+  forgeExecutePromptDefinition,
+  handleForgeExecute,
+} from '../forge-execute';
+import { AECStatus } from '../../../types/ticket';
+import type { ForgeConfig } from '../../../services/config.service';
+
+const mockConfig: ForgeConfig = {
+  accessToken: 'test-access-token',
+  refreshToken: 'test-refresh-token',
+  expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+  userId: 'user-1',
+  teamId: 'team-1',
+  user: { email: 'dev@example.com', displayName: 'Dev' },
+};
+
+const mockTicket = {
+  id: 'T-001',
+  title: 'Implement auth',
+  status: AECStatus.READY,
+  description: 'Add authentication to the API',
+  problemStatement: 'No auth exists',
+  solution: 'Add JWT middleware',
+  acceptanceCriteria: ['Auth header validated', 'Invalid tokens rejected'],
+  fileChanges: [
+    { path: 'src/auth.ts', action: 'create' as const, notes: 'New auth module' },
+    { path: 'src/app.ts', action: 'modify' as const },
+  ],
+  createdAt: '2026-02-20T00:00:00.000Z',
+  updatedAt: '2026-02-20T01:00:00.000Z',
+};
+
+describe('forgeExecutePromptDefinition', () => {
+  it('has the correct prompt name', () => {
+    expect(forgeExecutePromptDefinition.name).toBe('forge_execute');
+  });
+
+  it('has a non-empty description', () => {
+    expect(forgeExecutePromptDefinition.description.length).toBeGreaterThan(0);
+  });
+
+  it('requires ticketId argument', () => {
+    const ticketIdArg = forgeExecutePromptDefinition.arguments.find(
+      (a) => a.name === 'ticketId'
+    );
+    expect(ticketIdArg).toBeDefined();
+    expect(ticketIdArg?.required).toBe(true);
+  });
+});
+
+describe('handleForgeExecute', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(get).mockResolvedValue(mockTicket);
+  });
+
+  describe('success path', () => {
+    it('returns a user-role prompt message', async () => {
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      expect(result.isError).toBeUndefined();
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].role).toBe('user');
+      expect(result.messages![0].content.type).toBe('text');
+    });
+
+    it('includes agent_guide section with dev-executor.md content', async () => {
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<agent_guide>');
+      expect(text).toContain('Dev Executor Agent');
+      expect(text).toContain('</agent_guide>');
+    });
+
+    it('includes ticket_context section with ticket XML', async () => {
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<ticket_context>');
+      expect(text).toContain('<ticket id="T-001"');
+      expect(text).toContain('<title>Implement auth</title>');
+      expect(text).toContain('</ticket_context>');
+    });
+
+    it('includes acceptance criteria as <item> elements', async () => {
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<item>Auth header validated</item>');
+      expect(text).toContain('<item>Invalid tokens rejected</item>');
+    });
+
+    it('includes file changes as <change> elements', async () => {
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<change path="src/auth.ts" action="create">New auth module</change>');
+      expect(text).toContain('<change path="src/app.ts" action="modify">');
+    });
+
+    it('calls ApiService.get with correct path and trims ticketId whitespace', async () => {
+      await handleForgeExecute({ ticketId: '  T-001  ' }, mockConfig);
+
+      expect(get).toHaveBeenCalledWith('/tickets/T-001', mockConfig);
+    });
+
+    it('escapes XML special characters in ticket fields', async () => {
+      vi.mocked(get).mockResolvedValue({
+        ...mockTicket,
+        title: 'Fix <bug> & "crash"',
+        description: '',
+        problemStatement: '',
+        solution: '',
+        acceptanceCriteria: [],
+        fileChanges: [],
+      });
+
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+      const text = result.messages![0].content.text;
+      expect(text).toContain('Fix &lt;bug&gt; &amp; &quot;crash&quot;');
+    });
+  });
+
+  describe('input validation', () => {
+    it('returns isError for missing ticketId', async () => {
+      const result = await handleForgeExecute({}, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+    });
+
+    it('returns isError for empty string ticketId', async () => {
+      const result = await handleForgeExecute({ ticketId: '' }, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+    });
+
+    it('returns isError for whitespace-only ticketId', async () => {
+      const result = await handleForgeExecute({ ticketId: '   ' }, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+    });
+  });
+
+  describe('error paths', () => {
+    it('returns "Ticket not found" for 404 errors', async () => {
+      vi.mocked(get).mockRejectedValue(new Error('API error 404: Not Found'));
+
+      const result = await handleForgeExecute({ ticketId: 'T-999' }, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toBe('Ticket not found: T-999');
+    });
+
+    it('returns raw error message for auth errors', async () => {
+      vi.mocked(get).mockRejectedValue(
+        new Error('Session expired. Run `forge login` to re-authenticate.')
+      );
+
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toContain('Session expired');
+    });
+
+    it('returns raw error message for network errors', async () => {
+      vi.mocked(get).mockRejectedValue(new Error('Cannot reach Forge server'));
+
+      const result = await handleForgeExecute({ ticketId: 'T-001' }, mockConfig);
+
+      expect(result.isError).toBe(true);
+      expect(result.content![0].text).toContain('Cannot reach Forge server');
+    });
+  });
+});

@@ -17,6 +17,7 @@ vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
 vi.mock('@modelcontextprotocol/sdk/types.js', () => ({
   ListToolsRequestSchema: { method: 'tools/list' },
   ListPromptsRequestSchema: { method: 'prompts/list' },
+  GetPromptRequestSchema: { method: 'prompts/get' },
   CallToolRequestSchema: { method: 'tools/call' },
 }));
 
@@ -64,11 +65,35 @@ vi.mock('../tools/update-ticket-status.js', () => ({
   }),
 }));
 
+vi.mock('../prompts/forge-execute.js', () => ({
+  forgeExecutePromptDefinition: {
+    name: 'forge_execute',
+    description: 'Load executor persona and ticket context',
+    arguments: [{ name: 'ticketId', description: 'Ticket ID', required: true }],
+  },
+  handleForgeExecute: vi.fn().mockResolvedValue({
+    messages: [{ role: 'user', content: { type: 'text', text: '<agent_guide>...</agent_guide>' } }],
+  }),
+}));
+
+vi.mock('../prompts/forge-review.js', () => ({
+  forgeReviewPromptDefinition: {
+    name: 'forge_review',
+    description: 'Load reviewer persona and ticket summary',
+    arguments: [{ name: 'ticketId', description: 'Ticket ID', required: true }],
+  },
+  handleForgeReview: vi.fn().mockResolvedValue({
+    messages: [{ role: 'user', content: { type: 'text', text: '<agent_guide>...</agent_guide>' } }],
+  }),
+}));
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { handleGetTicketContext } from '../tools/get-ticket-context.js';
 import { handleGetFileChanges } from '../tools/get-file-changes.js';
 import { handleGetRepositoryContext } from '../tools/get-repository-context.js';
 import { handleUpdateTicketStatus } from '../tools/update-ticket-status.js';
+import { handleForgeExecute } from '../prompts/forge-execute.js';
+import { handleForgeReview } from '../prompts/forge-review.js';
 import { ForgeMCPServer } from '../server';
 import type { ForgeConfig } from '../../services/config.service';
 
@@ -103,11 +128,11 @@ describe('ForgeMCPServer', () => {
       expect(instance.connect).toHaveBeenCalledOnce();
     });
 
-    it('registers ListTools, ListPrompts, and CallTool request handlers', () => {
+    it('registers ListTools, ListPrompts, GetPrompt, and CallTool request handlers', () => {
       new ForgeMCPServer(mockConfig);
 
       const instance = getServerInstance();
-      expect(instance.setRequestHandler).toHaveBeenCalledTimes(3);
+      expect(instance.setRequestHandler).toHaveBeenCalledTimes(4);
     });
 
     it('returns tool list with all three tools from ListTools handler', async () => {
@@ -125,14 +150,76 @@ describe('ForgeMCPServer', () => {
       expect(names).toContain('update_ticket_status');
     });
 
-    it('returns empty prompts list from ListPrompts handler', async () => {
+    it('returns both prompts from ListPrompts handler', async () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
       // ListPrompts is the second handler registered
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[1][1];
       const result = await handler({});
-      expect(result).toEqual({ prompts: [] });
+      expect(result.prompts).toHaveLength(2);
+      const names = result.prompts.map((p: { name: string }) => p.name);
+      expect(names).toContain('forge_execute');
+      expect(names).toContain('forge_review');
+    });
+  });
+
+  describe('GetPrompt dispatch', () => {
+    it('dispatches forge_execute to its handler', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      // GetPrompt is the third handler registered (index 2)
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const result = await handler({
+        params: { name: 'forge_execute', arguments: { ticketId: 'T-001' } },
+      });
+
+      expect(handleForgeExecute).toHaveBeenCalledWith(
+        { ticketId: 'T-001' },
+        mockConfig
+      );
+      expect(result.messages[0].content.text).toContain('agent_guide');
+    });
+
+    it('dispatches forge_review to its handler', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      // GetPrompt is the third handler registered (index 2)
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const result = await handler({
+        params: { name: 'forge_review', arguments: { ticketId: 'T-001' } },
+      });
+
+      expect(handleForgeReview).toHaveBeenCalledWith(
+        { ticketId: 'T-001' },
+        mockConfig
+      );
+      expect(result.messages[0].content.text).toContain('agent_guide');
+    });
+
+    it('returns unknown prompt error for unrecognized prompt names', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const result = await handler({
+        params: { name: 'nonexistent_prompt', arguments: {} },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Unknown prompt: nonexistent_prompt');
+    });
+
+    it('handles missing arguments gracefully (defaults to empty object)', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      await expect(
+        handler({ params: { name: 'forge_execute' } })
+      ).resolves.not.toThrow();
     });
   });
 
@@ -141,8 +228,8 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      // CallTool is the third handler registered
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      // CallTool is the fourth handler registered (index 3)
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       const result = await handler({
         params: { name: 'get_ticket_context', arguments: { ticketId: 'T-001' } },
       });
@@ -158,7 +245,7 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       const result = await handler({
         params: { name: 'get_file_changes', arguments: { ticketId: 'T-001' } },
       });
@@ -174,7 +261,7 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       const result = await handler({
         params: { name: 'get_repository_context', arguments: { path: '/my/repo' } },
       });
@@ -190,7 +277,7 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       const result = await handler({
         params: { name: 'update_ticket_status', arguments: { ticketId: 'T-001', status: 'CREATED' } },
       });
@@ -206,7 +293,7 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       const result = await handler({
         params: { name: 'nonexistent_tool', arguments: {} },
       });
@@ -219,7 +306,7 @@ describe('ForgeMCPServer', () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
-      const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
       // No arguments field in params
       await expect(
         handler({ params: { name: 'get_ticket_context' } })

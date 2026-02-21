@@ -3,6 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
+  GetPromptRequestSchema,
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { ForgeConfig } from '../services/config.service.js';
@@ -22,6 +23,14 @@ import {
   updateTicketStatusToolDefinition,
   handleUpdateTicketStatus,
 } from './tools/update-ticket-status.js';
+import {
+  forgeExecutePromptDefinition,
+  handleForgeExecute,
+} from './prompts/forge-execute.js';
+import {
+  forgeReviewPromptDefinition,
+  handleForgeReview,
+} from './prompts/forge-review.js';
 
 export class ForgeMCPServer {
   private server: Server;
@@ -38,8 +47,24 @@ export class ForgeMCPServer {
     }));
 
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-      prompts: [],
+      prompts: [forgeExecutePromptDefinition, forgeReviewPromptDefinition],
     }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request): Promise<any> => {
+      const { name, arguments: args = {} } = request.params;
+      switch (name) {
+        case 'forge_execute':
+          return handleForgeExecute(args as Record<string, unknown>, this.config);
+        case 'forge_review':
+          return handleForgeReview(args as Record<string, unknown>, this.config);
+        default:
+          return {
+            content: [{ type: 'text' as const, text: `Unknown prompt: ${name}` }],
+            isError: true,
+          };
+      }
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.server.setRequestHandler(CallToolRequestSchema, async (request): Promise<any> => {
