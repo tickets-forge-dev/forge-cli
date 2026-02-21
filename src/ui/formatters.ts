@@ -10,6 +10,7 @@ const STATUS_ICONS: Record<AECStatus, string> = {
   [AECStatus.VALIDATED]: '✅',
   [AECStatus.READY]: '🚀',
   [AECStatus.CREATED]: '📝',
+  [AECStatus.WAITING_FOR_APPROVAL]: '⏳',
   [AECStatus.DRIFTED]: '⚠️ ',
   [AECStatus.COMPLETE]: '✅',
 };

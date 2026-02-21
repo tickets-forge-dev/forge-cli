@@ -24,6 +24,10 @@ import {
   handleUpdateTicketStatus,
 } from './tools/update-ticket-status.js';
 import {
+  submitReviewSessionToolDefinition,
+  handleSubmitReviewSession,
+} from './tools/submit-review-session.js';
+import {
   forgeExecutePromptDefinition,
   handleForgeExecute,
 } from './prompts/forge-execute.js';
@@ -43,7 +47,7 @@ export class ForgeMCPServer {
     );
 
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [getTicketContextToolDefinition, getFileChangesToolDefinition, getRepositoryContextToolDefinition, updateTicketStatusToolDefinition],
+      tools: [getTicketContextToolDefinition, getFileChangesToolDefinition, getRepositoryContextToolDefinition, updateTicketStatusToolDefinition, submitReviewSessionToolDefinition],
     }));
 
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
@@ -88,6 +92,11 @@ export class ForgeMCPServer {
           );
         case 'update_ticket_status':
           return handleUpdateTicketStatus(
+            args as Record<string, unknown>,
+            this.config
+          );
+        case 'submit_review_session':
+          return handleSubmitReviewSession(
             args as Record<string, unknown>,
             this.config
           );

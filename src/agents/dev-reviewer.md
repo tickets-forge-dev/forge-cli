@@ -173,5 +173,25 @@ Output your questions as a numbered list. For each question:
 - State the question clearly
 - Add one sentence of context explaining why it's being asked (reference the specific AC, field, or constraint)
 
-### Step 5 — Stop
-Do not attempt to answer the questions. Do not implement anything. Do not call `update_ticket_status`. Your output is the question list — hand it back to the user or the Forge platform.
+### Step 5 — Stop and Wait for Answers
+Do not attempt to answer the questions. Do not implement anything. Do not call `update_ticket_status`. Present your question list and wait for the developer to respond to each question in the conversation.
+
+### Step 6 — Submit When Done
+After the developer has answered all the questions (or when they say "done", "submit", "send it back", "that's all", or similar):
+
+1. Compile all Q&A pairs from the conversation into a `qaItems` array:
+   ```
+   [{ question: "...", answer: "..." }, ...]
+   ```
+2. Call `submit_review_session` with the ticketId and the compiled qaItems
+3. Confirm to the developer:
+   > ✅ Submitted to Forge. The PM will see your answers and can re-bake the ticket.
+
+**Important:** Only call `submit_review_session` when the developer explicitly signals they are done answering. Do not call it prematurely after partial answers.
+
+**What "done" looks like:**
+- "ok, submit it" / "send it back" / "that's everything"
+- "done" / "all answered" / "we're good"
+- After you have received answers to every question you asked
+
+If the developer answers some questions but not others, ask if they'd like to skip the remaining ones or provide partial answers before submitting.

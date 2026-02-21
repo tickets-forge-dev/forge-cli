@@ -9,6 +9,7 @@ export enum AECStatus {
   VALIDATED = 'VALIDATED',
   READY = 'READY',
   CREATED = 'CREATED',
+  WAITING_FOR_APPROVAL = 'WAITING_FOR_APPROVAL',
   DRIFTED = 'DRIFTED',
   COMPLETE = 'COMPLETE',
 }
@@ -31,6 +32,16 @@ export interface FileChange {
   notes?: string;
 }
 
+export interface ReviewQAItem {
+  question: string;
+  answer: string;
+}
+
+export interface ReviewSession {
+  qaItems: ReviewQAItem[];
+  submittedAt: string;
+}
+
 export interface TicketDetail extends TicketListItem {
   description?: string;
   acceptanceCriteria: string[];
@@ -43,6 +54,7 @@ export interface TicketDetail extends TicketListItem {
   apiChanges?: string;
   testPlan?: string;
   designRefs?: string[];
+  reviewSession?: ReviewSession | null;
 }
 
 // TicketContextResult is the shape returned by the get_ticket_context MCP tool.
