@@ -56,27 +56,21 @@ export const reviewCommand = new Command('review')
       }
 
       const icon = statusIcon(ticket.status);
-      console.log();
-      console.log(DIVIDER);
-      console.log(
-        ` Ticket: ${chalk.bold(`[${ticket.id}]`)} ${ticket.title}`
-      );
-      console.log(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}`);
-      console.log();
-      console.log(
-        chalk.bold(` forge review — Coming in Epic 6 (MCP Integration)`)
-      );
-      console.log(chalk.dim(' ' + '─'.repeat(50)));
-      console.log(` When available, this will start an AI-assisted review session that:`);
-      console.log(`   ${chalk.cyan('•')} Loads your ticket context into your AI coding assistant`);
-      console.log(`   ${chalk.cyan('•')} Asks dynamic questions to clarify implementation details`);
-      console.log(`   ${chalk.cyan('•')} Enriches the ticket with technical decisions`);
-      console.log();
-      console.log(
-        chalk.dim(` For now, view the full ticket with: forge show ${ticketId}`)
-      );
-      console.log(DIVIDER);
-      console.log();
+
+      // All output to stderr — stdout reserved for future scripting use
+      process.stderr.write('\n');
+      process.stderr.write(DIVIDER + '\n');
+      process.stderr.write(` Ticket: [${ticket.id}] ${ticket.title}\n`);
+      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}\n`);
+      process.stderr.write('\n');
+      process.stderr.write(` Ready to review. In Claude Code, invoke:\n`);
+      process.stderr.write('\n');
+      process.stderr.write(`   forge_review prompt  →  ticketId: ${ticket.id}\n`);
+      process.stderr.write('\n');
+      process.stderr.write(` (Forge MCP server is running in the background via .mcp.json)\n`);
+      process.stderr.write(` If not set up yet, run: forge mcp install\n`);
+      process.stderr.write(DIVIDER + '\n');
+      process.stderr.write('\n');
       process.exit(0);
     } catch (err) {
       console.error(chalk.red(`Error: ${(err as Error).message}`));

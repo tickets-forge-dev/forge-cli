@@ -5,6 +5,7 @@ import { listCommand } from './commands/list';
 import { showCommand } from './commands/show';
 import { reviewCommand } from './commands/review';
 import { executeCommand } from './commands/execute';
+import { mcpCommand } from './commands/mcp';
 
 const program = new Command();
 
@@ -19,5 +20,6 @@ program.addCommand(listCommand);
 program.addCommand(showCommand);
 program.addCommand(reviewCommand);
 program.addCommand(executeCommand);
+program.addCommand(mcpCommand);
 
 program.parse(process.argv);

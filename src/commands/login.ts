@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import * as ConfigService from '../services/config.service';
 import * as AuthService from '../services/auth.service';
+import { tryRegisterMcpServer } from '../mcp/install';
 
 export const loginCommand = new Command('login')
   .description('Authenticate with your Forge account')
@@ -65,6 +66,20 @@ export const loginCommand = new Command('login')
       spinner.succeed(
         `${chalk.green('Logged in as')} ${chalk.bold(token.user.email)} | Team: ${chalk.bold(token.teamId)}`
       );
+
+      // Auto-register MCP server (user scope) — must not fail login if this errors
+      try {
+        const mcpResult = await tryRegisterMcpServer('user');
+        if (mcpResult === 'registered') {
+          console.log(chalk.dim('  ✓ Forge MCP server registered (user scope)'));
+          console.log(chalk.dim('    Claude Code will connect automatically on next start.'));
+        } else {
+          console.log(chalk.dim('  ℹ  Run `forge mcp install` to enable MCP in Claude Code'));
+        }
+      } catch {
+        // MCP setup errors must never cause login to fail
+      }
+
       process.exit(0);
     } catch (err) {
       console.error(chalk.red(`Error: ${(err as Error).message}`));

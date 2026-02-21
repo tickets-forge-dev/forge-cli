@@ -57,27 +57,27 @@ export const executeCommand = new Command('execute')
       }
 
       const icon = statusIcon(ticket.status);
-      console.log();
-      console.log(DIVIDER);
-      console.log(
-        ` Ticket: ${chalk.bold(`[${ticket.id}]`)} ${ticket.title}`
-      );
-      console.log(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}`);
-      console.log();
-      console.log(
-        chalk.bold(` forge execute — Coming in Epic 6 (MCP Integration)`)
-      );
-      console.log(chalk.dim(' ' + '─'.repeat(50)));
-      console.log(` When available, this will start an AI-assisted execution session that:`);
-      console.log(`   ${chalk.cyan('•')} Connects your AI coding assistant to the Forge MCP server`);
-      console.log(`   ${chalk.cyan('•')} Provides full ticket context, acceptance criteria, and file hints`);
-      console.log(`   ${chalk.cyan('•')} Guides implementation through the ticket lifecycle`);
-      console.log();
-      console.log(
-        chalk.dim(` For now, view the full ticket with: forge show ${ticketId}`)
-      );
-      console.log(DIVIDER);
-      console.log();
+
+      try {
+        await ApiService.patch(`/tickets/${ticketId}`, { assignedTo: config!.userId }, config!);
+      } catch {
+        process.stderr.write(chalk.dim('  Warning: Could not auto-assign ticket.\n'));
+      }
+
+      // All output to stderr — stdout reserved for future scripting use
+      process.stderr.write('\n');
+      process.stderr.write(DIVIDER + '\n');
+      process.stderr.write(` Ticket: [${ticket.id}] ${ticket.title}\n`);
+      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}\n`);
+      process.stderr.write('\n');
+      process.stderr.write(` Ready to execute. In Claude Code, invoke:\n`);
+      process.stderr.write('\n');
+      process.stderr.write(`   forge_execute prompt  →  ticketId: ${ticket.id}\n`);
+      process.stderr.write('\n');
+      process.stderr.write(` (Forge MCP server is running in the background via .mcp.json)\n`);
+      process.stderr.write(` If not set up yet, run: forge mcp install\n`);
+      process.stderr.write(DIVIDER + '\n');
+      process.stderr.write('\n');
       process.exit(0);
     } catch (err) {
       console.error(chalk.red(`Error: ${(err as Error).message}`));

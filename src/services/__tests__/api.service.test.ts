@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { get } from '../api.service';
+import { get, patch } from '../api.service';
 import type { ForgeConfig } from '../config.service';
 
 // Mock dependencies
@@ -147,6 +147,83 @@ describe('api.service', () => {
     it('throws generic error on other non-OK responses', async () => {
       mockFetch.mockResolvedValue(mockResponse({}, 400));
       await expect(get('/tickets', config)).rejects.toThrow('API error 400');
+    });
+  });
+
+  describe('patch — happy path', () => {
+    it('sends PATCH with correct method, body, and Bearer token', async () => {
+      const updated = { id: 'T-1', status: 'CREATED' };
+      mockFetch.mockResolvedValue(mockResponse(updated));
+
+      const result = await patch('/tickets/T-1', { status: 'CREATED' }, config);
+
+      expect(result).toEqual(updated);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tickets/T-1'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'CREATED' }),
+          headers: expect.objectContaining({
+            Authorization: 'Bearer test-access-token',
+          }),
+        })
+      );
+    });
+  });
+
+  describe('patch — network errors', () => {
+    it('throws clear message when fetch throws (offline)', async () => {
+      mockFetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+      await expect(patch('/tickets/T-1', { status: 'CREATED' }, config)).rejects.toThrow(
+        'Cannot reach Forge server'
+      );
+    });
+  });
+
+  describe('patch — 401 with token refresh', () => {
+    it('refreshes token and retries on 401', async () => {
+      const refreshed = { accessToken: 'new-token', expiresAt: '2026-02-20T13:00:00.000Z' };
+      vi.mocked(refresh).mockResolvedValue(refreshed);
+
+      mockFetch
+        .mockResolvedValueOnce(mockResponse({}, 401))
+        .mockResolvedValueOnce(mockResponse({ id: 'T-1', status: 'CREATED' }, 200));
+
+      const result = await patch('/tickets/T-1', { status: 'CREATED' }, config);
+      expect(result).toEqual({ id: 'T-1', status: 'CREATED' });
+      expect(refresh).toHaveBeenCalledWith('test-refresh-token');
+    });
+
+    it('throws session expired when retry also returns 401', async () => {
+      vi.mocked(refresh).mockResolvedValue({
+        accessToken: 'new-token',
+        expiresAt: '2026-02-20T13:00:00.000Z',
+      });
+      mockFetch
+        .mockResolvedValueOnce(mockResponse({}, 401))
+        .mockResolvedValueOnce(mockResponse({}, 401));
+
+      await expect(patch('/tickets/T-1', { status: 'CREATED' }, config)).rejects.toThrow(
+        'Session expired'
+      );
+    });
+  });
+
+  describe('patch — 5xx retry', () => {
+    it('retries after 2s delay on 5xx and returns on success', async () => {
+      vi.useFakeTimers();
+      mockFetch
+        .mockResolvedValueOnce(mockResponse({}, 503))
+        .mockResolvedValueOnce(mockResponse({ id: 'T-1', status: 'CREATED' }, 200));
+
+      const promise = patch('/tickets/T-1', { status: 'CREATED' }, config);
+      await vi.advanceTimersByTimeAsync(2000);
+      const result = await promise;
+
+      expect(result).toEqual({ id: 'T-1', status: 'CREATED' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
     });
   });
 });
