@@ -65,6 +65,17 @@ vi.mock('../tools/update-ticket-status.js', () => ({
   }),
 }));
 
+vi.mock('../tools/submit-review-session.js', () => ({
+  submitReviewSessionToolDefinition: {
+    name: 'submit_review_session',
+    description: 'Submit Q&A review session',
+    inputSchema: { type: 'object', properties: {}, required: ['ticketId', 'qaItems'] },
+  },
+  handleSubmitReviewSession: vi.fn().mockResolvedValue({
+    content: [{ type: 'text', text: '{"success":true,"ticketId":"T-001","status":"waiting-for-approval","message":"✅ Submitted"}' }],
+  }),
+}));
+
 vi.mock('../prompts/forge-execute.js', () => ({
   forgeExecutePromptDefinition: {
     name: 'forge_execute',
@@ -92,6 +103,7 @@ import { handleGetTicketContext } from '../tools/get-ticket-context.js';
 import { handleGetFileChanges } from '../tools/get-file-changes.js';
 import { handleGetRepositoryContext } from '../tools/get-repository-context.js';
 import { handleUpdateTicketStatus } from '../tools/update-ticket-status.js';
+import { handleSubmitReviewSession } from '../tools/submit-review-session.js';
 import { handleForgeExecute } from '../prompts/forge-execute.js';
 import { handleForgeReview } from '../prompts/forge-review.js';
 import { ForgeMCPServer } from '../server';
@@ -285,6 +297,25 @@ describe('ForgeMCPServer', () => {
 
       expect(handleUpdateTicketStatus).toHaveBeenCalledWith(
         { ticketId: 'T-001', status: 'CREATED' },
+        mockConfig
+      );
+      expect(result.content[0].text).toContain('success');
+    });
+
+    it('dispatches submit_review_session to its handler', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
+      const result = await handler({
+        params: {
+          name: 'submit_review_session',
+          arguments: { ticketId: 'T-001', qaItems: [{ question: 'Why?', answer: 'Because.' }] },
+        },
+      });
+
+      expect(handleSubmitReviewSession).toHaveBeenCalledWith(
+        { ticketId: 'T-001', qaItems: [{ question: 'Why?', answer: 'Because.' }] },
         mockConfig
       );
       expect(result.content[0].text).toContain('success');
