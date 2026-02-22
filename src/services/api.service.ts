@@ -18,15 +18,19 @@ function buildUrl(path: string, params?: Record<string, string>): string {
 async function makeRequest(
   url: string,
   accessToken: string,
-  options?: { method?: string; body?: string }
+  options?: { method?: string; body?: string; teamId?: string }
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+  if (options?.teamId) {
+    headers['x-team-id'] = options.teamId;
+  }
   return fetch(url, {
     method: options?.method ?? 'GET',
     body: options?.body,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 }
 
@@ -40,11 +44,12 @@ export async function get<T>(
   params?: Record<string, string>
 ): Promise<T> {
   const url = buildUrl(path, params);
+  const reqOptions = { teamId: config.teamId };
   let res: Response;
 
   // Network error handling
   try {
-    res = await makeRequest(url, config.accessToken);
+    res = await makeRequest(url, config.accessToken, reqOptions);
   } catch {
     throw new Error(
       'Cannot reach Forge server. Check your connection or try again later.'
@@ -71,7 +76,7 @@ export async function get<T>(
 
     // Retry once with new token
     try {
-      res = await makeRequest(url, refreshed.accessToken);
+      res = await makeRequest(url, refreshed.accessToken, reqOptions);
     } catch {
       throw new Error(
         'Cannot reach Forge server. Check your connection or try again later.'
@@ -90,7 +95,7 @@ export async function get<T>(
     await sleep(RETRY_DELAY_MS);
 
     try {
-      res = await makeRequest(url, config.accessToken);
+      res = await makeRequest(url, config.accessToken, reqOptions);
     } catch {
       throw new Error(
         'Cannot reach Forge server. Check your connection or try again later.'
@@ -118,7 +123,7 @@ export async function post<T>(
 ): Promise<T> {
   const url = buildUrl(path);
   const serializedBody = JSON.stringify(body);
-  const reqOptions = { method: 'POST', body: serializedBody };
+  const reqOptions = { method: 'POST', body: serializedBody, teamId: config.teamId };
   let res: Response;
 
   // Network error handling
@@ -197,7 +202,7 @@ export async function patch<T>(
 ): Promise<T> {
   const url = buildUrl(path);
   const serializedBody = JSON.stringify(body);
-  const reqOptions = { method: 'PATCH', body: serializedBody };
+  const reqOptions = { method: 'PATCH', body: serializedBody, teamId: config.teamId };
   let res: Response;
 
   // Network error handling
