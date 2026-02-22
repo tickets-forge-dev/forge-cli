@@ -57,8 +57,8 @@ vi.mock('simple-git', () => ({
 
 // ── Prompt agent-guide mocks (file reads, not under test here) ───────────────
 
-vi.mock('../../agents/dev-executor.md?raw', () => ({ default: '# Dev Executor Guide' }), { virtual: true });
-vi.mock('../../agents/dev-reviewer.md?raw', () => ({ default: '# Dev Reviewer Guide' }), { virtual: true });
+vi.mock('../../agents/dev-executor.md?raw', () => ({ default: '# Dev Executor Guide' }));
+vi.mock('../../agents/dev-reviewer.md?raw', () => ({ default: '# Dev Reviewer Guide' }));
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
