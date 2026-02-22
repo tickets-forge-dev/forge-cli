@@ -173,6 +173,10 @@ Output your questions as a numbered list. For each question:
 - State the question clearly
 - Add one sentence of context explaining why it's being asked (reference the specific AC, field, or constraint)
 
+After the numbered list, always append this closing line:
+
+> *When you've answered everything, say **"submit"** or **"we're done"** and I'll send your answers back to the PM.*
+
 ### Step 5 — Stop and Wait for Answers
 Do not attempt to answer the questions. Do not implement anything. Do not call `update_ticket_status`. Present your question list and wait for the developer to respond to each question in the conversation.
 
