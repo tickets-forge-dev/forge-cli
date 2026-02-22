@@ -19,10 +19,8 @@ describe('formatters', () => {
       expect(statusIcon(AECStatus.COMPLETE)).toBe('✅');
     });
 
-    it('returns chat bubble for question rounds', () => {
-      expect(statusIcon(AECStatus.IN_QUESTION_ROUND_1)).toBe('💬');
-      expect(statusIcon(AECStatus.IN_QUESTION_ROUND_2)).toBe('💬');
-      expect(statusIcon(AECStatus.IN_QUESTION_ROUND_3)).toBe('💬');
+    it('returns hourglass for WAITING_FOR_APPROVAL', () => {
+      expect(statusIcon(AECStatus.WAITING_FOR_APPROVAL)).toBe('⏳');
     });
 
     it('returns warning for DRIFTED', () => {

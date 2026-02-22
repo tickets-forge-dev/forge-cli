@@ -61,7 +61,7 @@ export const reviewCommand = new Command('review')
       process.stderr.write('\n');
       process.stderr.write(DIVIDER + '\n');
       process.stderr.write(` Ticket: [${ticket.id}] ${ticket.title}\n`);
-      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}\n`);
+      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/-/g, ' ')}\n`);
       process.stderr.write('\n');
       process.stderr.write(` Ready to review. In Claude Code, invoke:\n`);
       process.stderr.write('\n');

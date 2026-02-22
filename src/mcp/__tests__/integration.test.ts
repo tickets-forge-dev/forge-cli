@@ -280,7 +280,7 @@ describe('MCP Integration: server → real handlers', () => {
       const result = await callTool({
         params: {
           name: 'update_ticket_status',
-          arguments: { ticketId: 'T-001', status: 'CREATED' },
+          arguments: { ticketId: 'T-001', status: 'created' },
         },
       }) as { content: Array<{ text: string }>; isError?: boolean };
 

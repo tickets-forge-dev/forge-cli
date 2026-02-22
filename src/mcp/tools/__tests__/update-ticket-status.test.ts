@@ -54,7 +54,7 @@ describe('handleUpdateTicketStatus', () => {
   describe('success path', () => {
     it('returns { success, ticketId, newStatus } on success', async () => {
       const result = await handleUpdateTicketStatus(
-        { ticketId: 'T-001', status: 'CREATED' },
+        { ticketId: 'T-001', status: AECStatus.CREATED },
         mockConfig
       );
 
@@ -67,26 +67,26 @@ describe('handleUpdateTicketStatus', () => {
 
     it('calls ApiService.patch with correct path and body', async () => {
       await handleUpdateTicketStatus(
-        { ticketId: 'T-001', status: 'CREATED' },
+        { ticketId: 'T-001', status: AECStatus.CREATED },
         mockConfig
       );
 
       expect(patch).toHaveBeenCalledWith(
         '/tickets/T-001',
-        { status: 'CREATED' },
+        { status: AECStatus.CREATED },
         mockConfig
       );
     });
 
     it('trims whitespace from ticketId before calling patch', async () => {
       await handleUpdateTicketStatus(
-        { ticketId: '  T-001  ', status: 'CREATED' },
+        { ticketId: '  T-001  ', status: AECStatus.CREATED },
         mockConfig
       );
 
       expect(patch).toHaveBeenCalledWith(
         '/tickets/T-001',
-        { status: 'CREATED' },
+        { status: AECStatus.CREATED },
         mockConfig
       );
     });
@@ -147,7 +147,7 @@ describe('handleUpdateTicketStatus', () => {
       vi.mocked(patch).mockRejectedValue(new Error('API error 404: Not Found'));
 
       const result = await handleUpdateTicketStatus(
-        { ticketId: 'T-999', status: 'CREATED' },
+        { ticketId: 'T-999', status: AECStatus.CREATED },
         mockConfig
       );
 
@@ -161,7 +161,7 @@ describe('handleUpdateTicketStatus', () => {
       );
 
       const result = await handleUpdateTicketStatus(
-        { ticketId: 'T-001', status: 'CREATED' },
+        { ticketId: 'T-001', status: AECStatus.CREATED },
         mockConfig
       );
 
@@ -173,7 +173,7 @@ describe('handleUpdateTicketStatus', () => {
       vi.mocked(patch).mockRejectedValue(new Error('Cannot reach Forge server'));
 
       const result = await handleUpdateTicketStatus(
-        { ticketId: 'T-001', status: 'CREATED' },
+        { ticketId: 'T-001', status: AECStatus.CREATED },
         mockConfig
       );
 

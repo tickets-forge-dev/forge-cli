@@ -20,7 +20,7 @@ export function printTicketDetail(ticket: TicketDetail): void {
 
   // Metadata
   const icon = statusIcon(ticket.status);
-  const statusText = ticket.status.replace(/_/g, ' ');
+  const statusText = ticket.status.replace(/-/g, ' ');
   console.log(`${chalk.dim('Status:   ')} ${icon} ${chalk.bold(statusText)}`);
 
   if (ticket.priority) {

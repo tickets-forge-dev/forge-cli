@@ -68,7 +68,7 @@ export const executeCommand = new Command('execute')
       process.stderr.write('\n');
       process.stderr.write(DIVIDER + '\n');
       process.stderr.write(` Ticket: [${ticket.id}] ${ticket.title}\n`);
-      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/_/g, ' ')}\n`);
+      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/-/g, ' ')}\n`);
       process.stderr.write('\n');
       process.stderr.write(` Ready to execute. In Claude Code, invoke:\n`);
       process.stderr.write('\n');

@@ -1,17 +1,13 @@
 // TODO: Replace with @forge/types when published (Epic 8)
 
 export enum AECStatus {
-  DRAFT = 'DRAFT',
-  IN_QUESTION_ROUND_1 = 'IN_QUESTION_ROUND_1',
-  IN_QUESTION_ROUND_2 = 'IN_QUESTION_ROUND_2',
-  IN_QUESTION_ROUND_3 = 'IN_QUESTION_ROUND_3',
-  QUESTIONS_COMPLETE = 'QUESTIONS_COMPLETE',
-  VALIDATED = 'VALIDATED',
-  READY = 'READY',
-  CREATED = 'CREATED',
-  WAITING_FOR_APPROVAL = 'WAITING_FOR_APPROVAL',
-  DRIFTED = 'DRIFTED',
-  COMPLETE = 'COMPLETE',
+  DRAFT = 'draft',
+  VALIDATED = 'validated',
+  READY = 'ready',
+  WAITING_FOR_APPROVAL = 'waiting-for-approval',
+  CREATED = 'created',
+  DRIFTED = 'drifted',
+  COMPLETE = 'complete',
 }
 
 export type TicketType = 'feature' | 'bug' | 'task';

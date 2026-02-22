@@ -3,14 +3,10 @@ import { AECStatus, type TicketListItem } from '../types/ticket';
 
 const STATUS_ICONS: Record<AECStatus, string> = {
   [AECStatus.DRAFT]: '⬜',
-  [AECStatus.IN_QUESTION_ROUND_1]: '💬',
-  [AECStatus.IN_QUESTION_ROUND_2]: '💬',
-  [AECStatus.IN_QUESTION_ROUND_3]: '💬',
-  [AECStatus.QUESTIONS_COMPLETE]: '✅',
   [AECStatus.VALIDATED]: '✅',
   [AECStatus.READY]: '🚀',
-  [AECStatus.CREATED]: '📝',
   [AECStatus.WAITING_FOR_APPROVAL]: '⏳',
+  [AECStatus.CREATED]: '📝',
   [AECStatus.DRIFTED]: '⚠️ ',
   [AECStatus.COMPLETE]: '✅',
 };
@@ -29,7 +25,7 @@ export function formatTicketRow(
   const displayTitle = selected ? chalk.bold.cyan(title) : title;
   const icon = statusIcon(ticket.status);
   const statusText = chalk.dim(
-    ticket.status.replace(/_/g, ' ').padEnd(24)
+    ticket.status.replace(/-/g, ' ').padEnd(24)
   );
   const assignee = ticket.assignedTo ? chalk.dim(ticket.assignedTo) : '';
 
