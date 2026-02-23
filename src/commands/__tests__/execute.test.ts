@@ -13,9 +13,14 @@ vi.mock('../../services/api.service', () => ({
   patch: vi.fn(),
 }));
 
+vi.mock('../../services/claude.service', () => ({
+  spawnClaude: vi.fn(),
+}));
+
 import { load } from '../../services/config.service';
 import { isLoggedIn } from '../../services/auth.service';
 import { get, patch } from '../../services/api.service';
+import { spawnClaude } from '../../services/claude.service';
 import { executeCommand } from '../execute';
 import { AECStatus } from '../../types/ticket';
 import type { ForgeConfig } from '../../services/config.service';
@@ -58,6 +63,7 @@ describe('executeCommand', () => {
     vi.mocked(isLoggedIn).mockReturnValue(true);
     vi.mocked(get).mockResolvedValue(mockTicket);
     vi.mocked(patch).mockResolvedValue(mockTicket);
+    vi.mocked(spawnClaude).mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -65,29 +71,27 @@ describe('executeCommand', () => {
     mockExit.mockRestore();
   });
 
-  it('prints instruction block to stderr with ticketId and prompt name', async () => {
+  it('spawns Claude with execute action and ticketId', async () => {
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
 
-    const output = stderrChunks.join('');
-    expect(output).toContain('forge_execute prompt');
-    expect(output).toContain('T-001');
-    expect(output).toContain('forge mcp install');
+    expect(spawnClaude).toHaveBeenCalledWith('execute', 'T-001');
   });
 
-  it('exits with code 0 after printing the instruction block', async () => {
+  it('exits with the code returned by spawnClaude', async () => {
+    vi.mocked(spawnClaude).mockResolvedValue(0);
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
 
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
-  it('prints the ticket title in the instruction block', async () => {
+  it('prints the ticket title to stderr before launching Claude', async () => {
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
 
     const output = stderrChunks.join('');
     expect(output).toContain('Fix authentication timeout');
   });
 
-  it('rejects tickets with DRAFT status and exits 1 before the instruction block', async () => {
+  it('rejects tickets with DRAFT status and exits 1', async () => {
     vi.mocked(get).mockResolvedValue({ ...mockTicket, status: AECStatus.DRAFT });
 
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
@@ -114,14 +118,12 @@ describe('executeCommand', () => {
     );
   });
 
-  it('continues and prints instruction block even when auto-assign patch fails', async () => {
+  it('continues and spawns Claude even when auto-assign patch fails', async () => {
     vi.mocked(patch).mockRejectedValue(new Error('Network error'));
 
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
 
-    // Should still exit 0 (success) and print the instruction block
+    expect(spawnClaude).toHaveBeenCalledWith('execute', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
-    const output = stderrChunks.join('');
-    expect(output).toContain('forge_execute prompt');
   });
 });

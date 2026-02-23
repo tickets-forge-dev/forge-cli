@@ -7,7 +7,7 @@ import type { ToolResult } from '../types.js';
 export const updateTicketStatusToolDefinition = {
   name: 'update_ticket_status',
   description:
-    'Update the status of a Forge ticket. Call this after completing implementation to mark the ticket as CREATED, or to transition it to another valid status.',
+    'Update the status of a Forge ticket. Call this after completing implementation to mark the ticket as Exported (created), or to transition it to another valid status (Write=draft, Dev-Refine=validated, Approve=waiting-for-approval, Execute=ready, Done=complete).',
   inputSchema: {
     type: 'object' as const,
     properties: {

@@ -37,7 +37,7 @@ describe('pager', () => {
 
     it('prints status', () => {
       printTicketDetail(ticket);
-      expect(allOutput).toContain('ready');
+      expect(allOutput).toContain('Execute');
       expect(allOutput).toContain('🚀');
     });
 

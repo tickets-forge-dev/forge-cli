@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { type TicketDetail } from '../types/ticket';
-import { statusIcon } from './formatters';
+import { statusIcon, STATUS_DISPLAY_NAMES } from './formatters';
 
 const DIVIDER = chalk.dim('─'.repeat(72));
 
@@ -20,7 +20,7 @@ export function printTicketDetail(ticket: TicketDetail): void {
 
   // Metadata
   const icon = statusIcon(ticket.status);
-  const statusText = ticket.status.replace(/-/g, ' ');
+  const statusText = STATUS_DISPLAY_NAMES[ticket.status] ?? ticket.status;
   console.log(`${chalk.dim('Status:   ')} ${icon} ${chalk.bold(statusText)}`);
 
   if (ticket.priority) {

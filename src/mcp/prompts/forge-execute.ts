@@ -5,7 +5,7 @@ import type { PromptResult } from '../types.js';
 import type { TicketDetail } from '../../types/ticket.js';
 
 export const forgeExecutePromptDefinition = {
-  name: 'forge_execute',
+  name: 'forge-execute',
   description:
     'Load the Forge dev-executor persona and full ticket context (XML) to begin implementing a ticket with Claude Code.',
   arguments: [

@@ -35,6 +35,14 @@ import {
   forgeReviewPromptDefinition,
   handleForgeReview,
 } from './prompts/forge-review.js';
+import {
+  forgeListPromptDefinition,
+  handleForgeList,
+} from './prompts/forge-list.js';
+import {
+  forgeExecPromptDefinition,
+  handleForgeExec,
+} from './prompts/forge-exec.js';
 
 export class ForgeMCPServer {
   private server: Server;
@@ -51,17 +59,21 @@ export class ForgeMCPServer {
     }));
 
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-      prompts: [forgeExecutePromptDefinition, forgeReviewPromptDefinition],
+      prompts: [forgeListPromptDefinition, forgeExecPromptDefinition, forgeExecutePromptDefinition, forgeReviewPromptDefinition],
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.server.setRequestHandler(GetPromptRequestSchema, async (request): Promise<any> => {
       const { name, arguments: args = {} } = request.params;
       switch (name) {
-        case 'forge_execute':
+        case 'forge-execute':
           return handleForgeExecute(args as Record<string, unknown>, this.config);
-        case 'forge_review':
+        case 'forge-review':
           return handleForgeReview(args as Record<string, unknown>, this.config);
+        case 'forge-list':
+          return handleForgeList(args as Record<string, unknown>, this.config);
+        case 'forge-exec':
+          return handleForgeExec(args as Record<string, unknown>, this.config);
         default:
           return {
             content: [{ type: 'text' as const, text: `Unknown prompt: ${name}` }],

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "forge": {
+      "type": "stdio",
+      "command": "forge",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

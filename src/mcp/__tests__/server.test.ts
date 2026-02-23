@@ -78,7 +78,7 @@ vi.mock('../tools/submit-review-session.js', () => ({
 
 vi.mock('../prompts/forge-execute.js', () => ({
   forgeExecutePromptDefinition: {
-    name: 'forge_execute',
+    name: 'forge-execute',
     description: 'Load executor persona and ticket context',
     arguments: [{ name: 'ticketId', description: 'Ticket ID', required: true }],
   },
@@ -89,11 +89,33 @@ vi.mock('../prompts/forge-execute.js', () => ({
 
 vi.mock('../prompts/forge-review.js', () => ({
   forgeReviewPromptDefinition: {
-    name: 'forge_review',
+    name: 'forge-review',
     description: 'Load reviewer persona and ticket summary',
     arguments: [{ name: 'ticketId', description: 'Ticket ID', required: true }],
   },
   handleForgeReview: vi.fn().mockResolvedValue({
+    messages: [{ role: 'user', content: { type: 'text', text: '<agent_guide>...</agent_guide>' } }],
+  }),
+}));
+
+vi.mock('../prompts/forge-list.js', () => ({
+  forgeListPromptDefinition: {
+    name: 'forge-list',
+    description: 'List your Forge tickets',
+    arguments: [{ name: 'filter', description: 'mine or all', required: false }],
+  },
+  handleForgeList: vi.fn().mockResolvedValue({
+    messages: [{ role: 'user', content: { type: 'text', text: '## My Tickets' } }],
+  }),
+}));
+
+vi.mock('../prompts/forge-exec.js', () => ({
+  forgeExecPromptDefinition: {
+    name: 'forge-exec',
+    description: 'Execute a Forge ticket (alias)',
+    arguments: [{ name: 'ticketId', description: 'Ticket ID', required: true }],
+  },
+  handleForgeExec: vi.fn().mockResolvedValue({
     messages: [{ role: 'user', content: { type: 'text', text: '<agent_guide>...</agent_guide>' } }],
   }),
 }));
@@ -170,22 +192,22 @@ describe('ForgeMCPServer', () => {
       // ListPrompts is the second handler registered
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[1][1];
       const result = await handler({});
-      expect(result.prompts).toHaveLength(2);
+      expect(result.prompts).toHaveLength(4);
       const names = result.prompts.map((p: { name: string }) => p.name);
-      expect(names).toContain('forge_execute');
-      expect(names).toContain('forge_review');
+      expect(names).toContain('forge-execute');
+      expect(names).toContain('forge-review');
     });
   });
 
   describe('GetPrompt dispatch', () => {
-    it('dispatches forge_execute to its handler', async () => {
+    it('dispatches forge-execute to its handler', async () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
       // GetPrompt is the third handler registered (index 2)
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
       const result = await handler({
-        params: { name: 'forge_execute', arguments: { ticketId: 'T-001' } },
+        params: { name: 'forge-execute', arguments: { ticketId: 'T-001' } },
       });
 
       expect(handleForgeExecute).toHaveBeenCalledWith(
@@ -195,14 +217,14 @@ describe('ForgeMCPServer', () => {
       expect(result.messages[0].content.text).toContain('agent_guide');
     });
 
-    it('dispatches forge_review to its handler', async () => {
+    it('dispatches forge-review to its handler', async () => {
       new ForgeMCPServer(mockConfig);
       const instance = getServerInstance();
 
       // GetPrompt is the third handler registered (index 2)
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
       const result = await handler({
-        params: { name: 'forge_review', arguments: { ticketId: 'T-001' } },
+        params: { name: 'forge-review', arguments: { ticketId: 'T-001' } },
       });
 
       expect(handleForgeReview).toHaveBeenCalledWith(
@@ -231,7 +253,7 @@ describe('ForgeMCPServer', () => {
 
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[2][1];
       await expect(
-        handler({ params: { name: 'forge_execute' } })
+        handler({ params: { name: 'forge-execute' } })
       ).resolves.not.toThrow();
     });
   });

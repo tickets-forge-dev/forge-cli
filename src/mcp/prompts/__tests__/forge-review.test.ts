@@ -43,7 +43,7 @@ const mockTicket = {
 
 describe('forgeReviewPromptDefinition', () => {
   it('has the correct prompt name', () => {
-    expect(forgeReviewPromptDefinition.name).toBe('forge_review');
+    expect(forgeReviewPromptDefinition.name).toBe('forge-review');
   });
 
   it('has a non-empty description', () => {

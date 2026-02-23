@@ -5,13 +5,12 @@ import { isLoggedIn } from '../services/auth.service';
 import * as ApiService from '../services/api.service';
 import { statusIcon } from '../ui/formatters';
 import { AECStatus, type TicketDetail } from '../types/ticket';
+import { spawnClaude } from '../services/claude.service';
 
 const EXECUTE_VALID_STATUSES = new Set<AECStatus>([
   AECStatus.READY,
   AECStatus.VALIDATED,
 ]);
-
-const DIVIDER = chalk.dim('─'.repeat(72));
 
 export const executeCommand = new Command('execute')
   .description('Start an AI-assisted execution session for a ticket')
@@ -64,21 +63,11 @@ export const executeCommand = new Command('execute')
         process.stderr.write(chalk.dim('  Warning: Could not auto-assign ticket.\n'));
       }
 
-      // All output to stderr — stdout reserved for future scripting use
-      process.stderr.write('\n');
-      process.stderr.write(DIVIDER + '\n');
-      process.stderr.write(` Ticket: [${ticket.id}] ${ticket.title}\n`);
-      process.stderr.write(` Status: ${icon} ${ticket.status.replace(/-/g, ' ')}\n`);
-      process.stderr.write('\n');
-      process.stderr.write(` Ready to execute. In Claude Code, invoke:\n`);
-      process.stderr.write('\n');
-      process.stderr.write(`   forge_execute prompt  →  ticketId: ${ticket.id}\n`);
-      process.stderr.write('\n');
-      process.stderr.write(` (Forge MCP server is running in the background via .mcp.json)\n`);
-      process.stderr.write(` If not set up yet, run: forge mcp install\n`);
-      process.stderr.write(DIVIDER + '\n');
-      process.stderr.write('\n');
-      process.exit(0);
+      process.stderr.write(
+        `\n${icon} Executing [${ticket.id}] ${ticket.title} — launching Claude...\n\n`
+      );
+      const exitCode = await spawnClaude('execute', ticket.id);
+      process.exit(exitCode);
     } catch (err) {
       console.error(chalk.red(`Error: ${(err as Error).message}`));
       process.exit(2);

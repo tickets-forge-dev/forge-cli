@@ -427,12 +427,12 @@ describe('MCP Integration: server → real handlers', () => {
   // ── Prompt dispatch ─────────────────────────────────────────────────────────
 
   describe('GetPrompt dispatch → real handlers', () => {
-    it('forge_execute returns messages array with agent guide', async () => {
+    it('forge-execute returns messages array with agent guide', async () => {
       new ForgeMCPServer(mockConfig);
       const getPrompt = getGetPromptHandler();
 
       const result = await getPrompt({
-        params: { name: 'forge_execute', arguments: { ticketId: 'T-001' } },
+        params: { name: 'forge-execute', arguments: { ticketId: 'T-001' } },
       }) as { messages: Array<{ role: string; content: { type: string; text: string } }> };
 
       expect(Array.isArray(result.messages)).toBe(true);
@@ -440,12 +440,12 @@ describe('MCP Integration: server → real handlers', () => {
       expect(result.messages[0].role).toBe('user');
     });
 
-    it('forge_review returns messages array with reviewer guide', async () => {
+    it('forge-review returns messages array with reviewer guide', async () => {
       new ForgeMCPServer(mockConfig);
       const getPrompt = getGetPromptHandler();
 
       const result = await getPrompt({
-        params: { name: 'forge_review', arguments: { ticketId: 'T-001' } },
+        params: { name: 'forge-review', arguments: { ticketId: 'T-001' } },
       }) as { messages: Array<{ role: string }> };
 
       expect(Array.isArray(result.messages)).toBe(true);

@@ -10,11 +10,17 @@ vi.mock('../../services/auth.service', () => ({
 
 vi.mock('../../services/api.service', () => ({
   get: vi.fn(),
+  patch: vi.fn(),
+}));
+
+vi.mock('../../services/claude.service', () => ({
+  spawnClaude: vi.fn(),
 }));
 
 import { load } from '../../services/config.service';
 import { isLoggedIn } from '../../services/auth.service';
-import { get } from '../../services/api.service';
+import { get, patch } from '../../services/api.service';
+import { spawnClaude } from '../../services/claude.service';
 import { reviewCommand } from '../review';
 import { AECStatus, type TicketDetail } from '../../types/ticket';
 
@@ -53,6 +59,8 @@ describe('reviewCommand', () => {
 
     vi.mocked(load).mockResolvedValue(mockConfig);
     vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(patch).mockResolvedValue({});
+    vi.mocked(spawnClaude).mockResolvedValue(0);
   });
 
   afterEach(() => {
@@ -92,50 +100,61 @@ describe('reviewCommand', () => {
     expect(calls).toContain('draft');
   });
 
-  it('exits 0 and writes MCP instruction block when ticket is READY', async () => {
+  it('spawns Claude with review action when ticket is READY', async () => {
     vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.READY));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
+    expect(spawnClaude).toHaveBeenCalledWith('review', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
-
-    // Verify stderr contains ticket ID and prompt name
-    const stderrOutput = mockStderrWrite.mock.calls.map((c: unknown[]) => c[0]).join('');
-    expect(stderrOutput).toContain('T-001');
-    expect(stderrOutput).toContain('forge_review');
   });
 
-  it('exits 0 for VALIDATED status (valid for review)', async () => {
+  it('spawns Claude for VALIDATED status (valid for review)', async () => {
     vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.VALIDATED));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
+    expect(spawnClaude).toHaveBeenCalledWith('review', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
-  it('exits 0 for CREATED status (valid for review)', async () => {
+  it('spawns Claude for CREATED status (valid for review)', async () => {
     vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.CREATED));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
+    expect(spawnClaude).toHaveBeenCalledWith('review', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
-  it('exits 0 for DRIFTED status (valid for review)', async () => {
+  it('spawns Claude for DRIFTED status (valid for review)', async () => {
     vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.DRIFTED));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
+    expect(spawnClaude).toHaveBeenCalledWith('review', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
-  it('includes the ticket title in the instruction block output', async () => {
+  it('prints the ticket title to stderr before launching Claude', async () => {
     vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.READY));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
     const stderrOutput = mockStderrWrite.mock.calls.map((c: unknown[]) => c[0]).join('');
     expect(stderrOutput).toContain('Add rate limiting');
+  });
+
+  it('auto-assigns the ticket before launching Claude', async () => {
+    vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.READY));
+
+    await reviewCommand.parseAsync(['node', 'review', 'T-001']);
+
+    expect(patch).toHaveBeenCalledWith(
+      '/tickets/T-001',
+      { assignedTo: 'u1' },
+      mockConfig
+    );
   });
 
   it('exits 2 for unexpected API errors', async () => {

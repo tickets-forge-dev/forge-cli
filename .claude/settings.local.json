@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "forge"
+  ],
+  "enableAllProjectMcpServers": true
+}

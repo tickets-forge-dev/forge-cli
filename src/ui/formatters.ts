@@ -11,13 +11,25 @@ const STATUS_ICONS: Record<AECStatus, string> = {
   [AECStatus.COMPLETE]: '✅',
 };
 
+/** Human-readable display names for all backend statuses (not the lifecycle steps). */
+export const STATUS_DISPLAY_NAMES: Record<AECStatus, string> = {
+  [AECStatus.DRAFT]: 'Write',
+  [AECStatus.VALIDATED]: 'Dev-Refine',
+  [AECStatus.READY]: 'Execute',
+  [AECStatus.WAITING_FOR_APPROVAL]: 'Approve',
+  [AECStatus.CREATED]: 'Exported',
+  [AECStatus.DRIFTED]: 'Drifted',
+  [AECStatus.COMPLETE]: 'Done',
+};
+
 export function statusIcon(status: AECStatus): string {
   return STATUS_ICONS[status] ?? '❓';
 }
 
 export function formatTicketRow(
   ticket: TicketListItem,
-  selected: boolean
+  selected: boolean,
+  memberNames?: Map<string, string>
 ): string {
   const pointer = selected ? chalk.cyan('▶') : ' ';
   const id = chalk.dim(`[${ticket.id}]`.padEnd(12));
@@ -25,9 +37,13 @@ export function formatTicketRow(
   const displayTitle = selected ? chalk.bold.cyan(title) : title;
   const icon = statusIcon(ticket.status);
   const statusText = chalk.dim(
-    ticket.status.replace(/-/g, ' ').padEnd(24)
+    (STATUS_DISPLAY_NAMES[ticket.status] ?? ticket.status).padEnd(24)
   );
-  const assignee = ticket.assignedTo ? chalk.dim(ticket.assignedTo) : '';
+  const rawAssignee = ticket.assignedTo;
+  const assigneeName = rawAssignee
+    ? memberNames?.get(rawAssignee) ?? rawAssignee
+    : '';
+  const assignee = assigneeName ? chalk.dim(assigneeName) : '';
 
   return `${pointer} ${id} ${displayTitle} ${icon}  ${statusText} ${assignee}`;
 }
