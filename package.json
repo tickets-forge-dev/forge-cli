@@ -1,5 +1,5 @@
 {
-  "name": "@forge/cli",
+  "name": "forge-ai-cli",
   "version": "0.1.0",
   "description": "CLI for Forge — authenticate, browse tickets, and execute AI-assisted implementations via MCP",
   "license": "MIT",
@@ -12,6 +12,9 @@
   "engines": {
     "node": ">=20"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
