@@ -76,6 +76,17 @@ vi.mock('../tools/submit-review-session.js', () => ({
   }),
 }));
 
+vi.mock('../tools/list-tickets.js', () => ({
+  listTicketsToolDefinition: {
+    name: 'list_tickets',
+    description: 'List Forge tickets',
+    inputSchema: { type: 'object', properties: {}, required: [] },
+  },
+  handleListTickets: vi.fn().mockResolvedValue({
+    content: [{ type: 'text', text: '[{"id":"T-001","title":"Add auth","status":"ready"}]' }],
+  }),
+}));
+
 vi.mock('../prompts/forge-execute.js', () => ({
   forgeExecutePromptDefinition: {
     name: 'forge-execute',
@@ -128,6 +139,7 @@ import { handleUpdateTicketStatus } from '../tools/update-ticket-status.js';
 import { handleSubmitReviewSession } from '../tools/submit-review-session.js';
 import { handleForgeExecute } from '../prompts/forge-execute.js';
 import { handleForgeReview } from '../prompts/forge-review.js';
+import { handleListTickets } from '../tools/list-tickets.js';
 import { ForgeMCPServer } from '../server';
 import type { ForgeConfig } from '../../services/config.service';
 
@@ -176,13 +188,14 @@ describe('ForgeMCPServer', () => {
       // ListTools is the first handler registered
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[0][1];
       const result = await handler({});
-      expect(result.tools).toHaveLength(5);
+      expect(result.tools).toHaveLength(6);
       const names = result.tools.map((t: { name: string }) => t.name);
       expect(names).toContain('get_ticket_context');
       expect(names).toContain('get_file_changes');
       expect(names).toContain('get_repository_context');
       expect(names).toContain('update_ticket_status');
       expect(names).toContain('submit_review_session');
+      expect(names).toContain('list_tickets');
     });
 
     it('returns both prompts from ListPrompts handler', async () => {
@@ -341,6 +354,22 @@ describe('ForgeMCPServer', () => {
         mockConfig
       );
       expect(result.content[0].text).toContain('success');
+    });
+
+    it('dispatches list_tickets to its handler', async () => {
+      new ForgeMCPServer(mockConfig);
+      const instance = getServerInstance();
+
+      const handler = vi.mocked(instance.setRequestHandler).mock.calls[3][1];
+      const result = await handler({
+        params: { name: 'list_tickets', arguments: { filter: 'all' } },
+      });
+
+      expect(handleListTickets).toHaveBeenCalledWith(
+        { filter: 'all' },
+        mockConfig
+      );
+      expect(result.content[0].text).toContain('T-001');
     });
 
     it('returns unknown tool error for unrecognized tool names', async () => {

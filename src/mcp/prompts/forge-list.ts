@@ -95,7 +95,7 @@ export async function handleForgeList(
   if (tickets.length === 0) {
     const hint =
       filter !== 'all'
-        ? '\n\nTry `/forge:forge_list` with filter `all` to see all team tickets.'
+        ? '\n\nTry `/forge:list` with filter `all` to see all team tickets.'
         : '';
     return {
       messages: [

@@ -133,19 +133,20 @@ describe('MCP Integration: server → real handlers', () => {
   // ── Tool listing ────────────────────────────────────────────────────────────
 
   describe('ListTools', () => {
-    it('lists all 5 registered tools with correct metadata', async () => {
+    it('lists all 6 registered tools with correct metadata', async () => {
       new ForgeMCPServer(mockConfig);
       const handler = getListToolsHandler();
 
       const result = await handler({}) as { tools: Array<{ name: string; description: string; inputSchema: unknown }> };
 
-      expect(result.tools).toHaveLength(5);
+      expect(result.tools).toHaveLength(6);
       const names = result.tools.map(t => t.name);
       expect(names).toContain('get_ticket_context');
       expect(names).toContain('get_file_changes');
       expect(names).toContain('get_repository_context');
       expect(names).toContain('update_ticket_status');
       expect(names).toContain('submit_review_session');
+      expect(names).toContain('list_tickets');
     });
 
     it('each tool has a non-empty description', async () => {
