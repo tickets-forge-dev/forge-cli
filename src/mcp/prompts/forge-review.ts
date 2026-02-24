@@ -25,9 +25,18 @@ function escapeXml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function serializeTicketSummaryXml(ticket: TicketDetail): string {
+function serializeTicketReviewXml(ticket: TicketDetail): string {
   const acItems = (ticket.acceptanceCriteria ?? [])
     .map((ac) => `    <item>${escapeXml(ac)}</item>`)
+    .join('\n');
+
+  const fcItems = (ticket.fileChanges ?? [])
+    .map(
+      (fc) =>
+        `    <change path="${escapeXml(fc.path)}" action="${escapeXml(fc.action)}">${
+          fc.notes ? escapeXml(fc.notes) : ''
+        }</change>`
+    )
     .join('\n');
 
   return `<ticket id="${escapeXml(ticket.id)}" status="${ticket.status}">
@@ -38,6 +47,11 @@ function serializeTicketSummaryXml(ticket: TicketDetail): string {
   <acceptanceCriteria>
 ${acItems}
   </acceptanceCriteria>
+  <fileChanges>
+${fcItems}
+  </fileChanges>
+  <apiChanges>${escapeXml(ticket.apiChanges ?? '')}</apiChanges>
+  <testPlan>${escapeXml(ticket.testPlan ?? '')}</testPlan>
 </ticket>`;
 }
 
@@ -69,7 +83,7 @@ export async function handleForgeReview(
     };
   }
 
-  const ticketSummaryXml = serializeTicketSummaryXml(ticket);
+  const ticketSummaryXml = serializeTicketReviewXml(ticket);
 
   return {
     messages: [

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../agents/dev-reviewer.md', () => ({
   default:
-    '# Dev Reviewer Agent\n## Persona\nYou are a Forge dev reviewer.\n## Principles\n## Question Categories\n## Examples\n',
+    '# Forgy — Interactive Dev Reviewer\n## Persona\nYou are **Forgy** — a warm, sharp peer reviewer.\n## Principles\n## Question Categories\n## Examples\n',
 }));
 
 vi.mock('../../../services/api.service', () => ({
@@ -75,12 +75,12 @@ describe('handleForgeReview', () => {
       expect(result.messages![0].content.type).toBe('text');
     });
 
-    it('includes agent_guide section with dev-reviewer.md content', async () => {
+    it('includes agent_guide section with Forgy persona content', async () => {
       const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
 
       const text = result.messages![0].content.text;
       expect(text).toContain('<agent_guide>');
-      expect(text).toContain('Dev Reviewer Agent');
+      expect(text).toContain('Forgy');
       expect(text).toContain('</agent_guide>');
     });
 
@@ -102,12 +102,44 @@ describe('handleForgeReview', () => {
       expect(text).toContain('<item>Valid tokens proceed normally</item>');
     });
 
-    it('does not include fileChanges in the ticket summary XML', async () => {
+    it('includes fileChanges in the ticket review XML', async () => {
       const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
 
       const text = result.messages![0].content.text;
-      expect(text).not.toContain('<fileChanges>');
-      expect(text).not.toContain('<change ');
+      expect(text).toContain('<fileChanges>');
+      expect(text).toContain('<change path="src/middleware/auth.ts" action="create">New auth middleware</change>');
+    });
+
+    it('includes apiChanges in the ticket review XML', async () => {
+      vi.mocked(get).mockResolvedValue({
+        ...mockTicket,
+        apiChanges: 'POST /auth/login — new endpoint',
+      });
+
+      const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<apiChanges>POST /auth/login — new endpoint</apiChanges>');
+    });
+
+    it('includes testPlan in the ticket review XML', async () => {
+      vi.mocked(get).mockResolvedValue({
+        ...mockTicket,
+        testPlan: 'Unit tests for auth middleware',
+      });
+
+      const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<testPlan>Unit tests for auth middleware</testPlan>');
+    });
+
+    it('renders empty tags when apiChanges and testPlan are absent', async () => {
+      const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
+
+      const text = result.messages![0].content.text;
+      expect(text).toContain('<apiChanges></apiChanges>');
+      expect(text).toContain('<testPlan></testPlan>');
     });
 
     it('calls ApiService.get with correct path and trims ticketId whitespace', async () => {
