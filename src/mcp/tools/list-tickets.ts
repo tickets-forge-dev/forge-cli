@@ -53,8 +53,10 @@ export async function handleListTickets(
       assignedTo: t.assignedTo ?? null,
     }));
 
+    const hint = '\n\nTo review a ticket: /forge:review <ticketId>\nTo execute a ticket: /forge:exec <ticketId>';
+
     return {
-      content: [{ type: 'text', text: JSON.stringify(result) }],
+      content: [{ type: 'text', text: JSON.stringify(result) + hint }],
     };
   } catch (err) {
     const message = (err as Error).message ?? String(err);
