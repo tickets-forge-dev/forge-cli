@@ -5,7 +5,7 @@ import type { TicketListItem } from '../../types/ticket.js';
 import { AECStatus } from '../../types/ticket.js';
 
 export const forgeListPromptDefinition = {
-  name: 'forge-list',
+  name: 'list',
   description:
     'List your Forge tickets with status, priority, and assignee names. Use this to browse tickets before executing or reviewing one.',
   arguments: [
@@ -126,7 +126,7 @@ export async function handleForgeList(
   });
 
   const table = [header, divider, ...rows].join('\n');
-  const text = `## ${label} (${tickets.length})\n\n${table}\n\n> To execute a ticket: \`/forge:forge-exec\` with the ticket ID\n> To review a ticket: \`/forge:forge-review\` with the ticket ID`;
+  const text = `## ${label} (${tickets.length})\n\n${table}\n\n> To execute a ticket: \`/forge:exec\` with the ticket ID\n> To review a ticket: \`/forge:review\` with the ticket ID`;
 
   return {
     messages: [

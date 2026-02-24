@@ -440,12 +440,12 @@ describe('MCP Integration: server → real handlers', () => {
       expect(result.messages[0].role).toBe('user');
     });
 
-    it('forge-review returns messages array with reviewer guide', async () => {
+    it('review returns messages array with reviewer guide', async () => {
       new ForgeMCPServer(mockConfig);
       const getPrompt = getGetPromptHandler();
 
       const result = await getPrompt({
-        params: { name: 'forge-review', arguments: { ticketId: 'T-001' } },
+        params: { name: 'review', arguments: { ticketId: 'T-001' } },
       }) as { messages: Array<{ role: string }> };
 
       expect(Array.isArray(result.messages)).toBe(true);

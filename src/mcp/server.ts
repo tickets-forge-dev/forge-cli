@@ -68,9 +68,9 @@ export class ForgeMCPServer {
       switch (name) {
         case 'forge-execute':
           return handleForgeExecute(args as Record<string, unknown>, this.config);
-        case 'forge-review':
+        case 'review':
           return handleForgeReview(args as Record<string, unknown>, this.config);
-        case 'forge-list':
+        case 'list':
           return handleForgeList(args as Record<string, unknown>, this.config);
         case 'forge-exec':
           return handleForgeExec(args as Record<string, unknown>, this.config);

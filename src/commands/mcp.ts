@@ -81,7 +81,7 @@ mcpCommand
     console.log();
     console.log(' Restart Claude Code to apply. Per-ticket usage:');
     console.log(chalk.dim('   forge execute T-001   → invoke forge-exec prompt in Claude Code'));
-    console.log(chalk.dim('   forge review T-001    → invoke forge-review prompt in Claude Code'));
+    console.log(chalk.dim('   forge review T-001    → invoke review prompt in Claude Code'));
     console.log();
     console.log(chalk.dim(DIVIDER));
     console.log();

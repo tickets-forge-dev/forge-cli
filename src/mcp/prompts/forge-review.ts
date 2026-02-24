@@ -5,7 +5,7 @@ import type { PromptResult } from '../types.js';
 import type { TicketDetail } from '../../types/ticket.js';
 
 export const forgeReviewPromptDefinition = {
-  name: 'forge-review',
+  name: 'review',
   description:
     'Load the Forge dev-reviewer persona and ticket summary to generate clarifying questions for the PM.',
   arguments: [

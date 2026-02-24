@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 
 export function spawnClaude(action: 'execute' | 'review', ticketId: string): Promise<number> {
-  const promptName = action === 'execute' ? 'forge-exec' : 'forge-review';
+  const promptName = action === 'execute' ? 'forge-exec' : 'review';
   const prompt = `Use the ${promptName} MCP prompt with ticketId "${ticketId}" to ${action} this ticket.`;
 
   // Windows: claude is installed as a .cmd shim which requires a shell to
