@@ -13,7 +13,7 @@ const STATUS_ICONS: Record<AECStatus, string> = {
 
 /** Human-readable display names for all backend statuses (not the lifecycle steps). */
 export const STATUS_DISPLAY_NAMES: Record<AECStatus, string> = {
-  [AECStatus.DRAFT]: 'Write',
+  [AECStatus.DRAFT]: 'Define',
   [AECStatus.VALIDATED]: 'Dev-Refine',
   [AECStatus.READY]: 'Execute',
   [AECStatus.WAITING_FOR_APPROVAL]: 'Approve',
