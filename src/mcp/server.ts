@@ -76,8 +76,7 @@ export class ForgeMCPServer {
           return handleForgeExec(args as Record<string, unknown>, this.config);
         default:
           return {
-            content: [{ type: 'text' as const, text: `Unknown prompt: ${name}` }],
-            isError: true,
+            messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Error: Unknown prompt: ${name}` } }],
           };
       }
     });

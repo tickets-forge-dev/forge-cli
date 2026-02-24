@@ -134,25 +134,25 @@ describe('handleForgeReview', () => {
   });
 
   describe('input validation', () => {
-    it('returns isError for missing ticketId', async () => {
+    it('returns error message for missing ticketId', async () => {
       const result = await handleForgeReview({}, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Missing required argument: ticketId');
     });
 
-    it('returns isError for empty string ticketId', async () => {
+    it('returns error message for empty string ticketId', async () => {
       const result = await handleForgeReview({ ticketId: '' }, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Missing required argument: ticketId');
     });
 
-    it('returns isError for whitespace-only ticketId', async () => {
+    it('returns error message for whitespace-only ticketId', async () => {
       const result = await handleForgeReview({ ticketId: '   ' }, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toBe('Missing required argument: ticketId');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Missing required argument: ticketId');
     });
   });
 
@@ -162,28 +162,28 @@ describe('handleForgeReview', () => {
 
       const result = await handleForgeReview({ ticketId: 'T-999' }, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toBe('Ticket not found: T-999');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Ticket not found: T-999');
     });
 
-    it('returns raw error message for auth errors', async () => {
+    it('returns error message for auth errors', async () => {
       vi.mocked(get).mockRejectedValue(
         new Error('Session expired. Run `forge login` to re-authenticate.')
       );
 
       const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toContain('Session expired');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Session expired');
     });
 
-    it('returns raw error message for network errors', async () => {
+    it('returns error message for network errors', async () => {
       vi.mocked(get).mockRejectedValue(new Error('Cannot reach Forge server'));
 
       const result = await handleForgeReview({ ticketId: 'T-001' }, mockConfig);
 
-      expect(result.isError).toBe(true);
-      expect(result.content![0].text).toContain('Cannot reach Forge server');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages![0].content.text).toContain('Cannot reach Forge server');
     });
   });
 });

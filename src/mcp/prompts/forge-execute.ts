@@ -60,8 +60,7 @@ export async function handleForgeExecute(
   const rawId = args.ticketId;
   if (typeof rawId !== 'string' || rawId.trim() === '') {
     return {
-      isError: true,
-      content: [{ type: 'text', text: 'Missing required argument: ticketId' }],
+      messages: [{ role: 'user', content: { type: 'text', text: 'Error: Missing required argument: ticketId' } }],
     };
   }
 
@@ -74,13 +73,11 @@ export async function handleForgeExecute(
     const message = (err as Error).message ?? 'Unknown error';
     if (message.includes('404')) {
       return {
-        isError: true,
-        content: [{ type: 'text', text: `Ticket not found: ${ticketId}` }],
+        messages: [{ role: 'user', content: { type: 'text', text: `Error: Ticket not found: ${ticketId}` } }],
       };
     }
     return {
-      isError: true,
-      content: [{ type: 'text', text: message }],
+      messages: [{ role: 'user', content: { type: 'text', text: `Error: ${message}` } }],
     };
   }
 

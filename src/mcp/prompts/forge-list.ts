@@ -88,8 +88,7 @@ export async function handleForgeList(
   } catch (err) {
     const message = (err as Error).message ?? 'Unknown error';
     return {
-      isError: true,
-      content: [{ type: 'text', text: `Failed to fetch tickets: ${message}` }],
+      messages: [{ role: 'user', content: { type: 'text', text: `Error: Failed to fetch tickets: ${message}` } }],
     };
   }
 

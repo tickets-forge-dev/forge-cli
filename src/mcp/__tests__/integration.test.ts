@@ -452,16 +452,16 @@ describe('MCP Integration: server → real handlers', () => {
       expect(result.messages[0].role).toBe('user');
     });
 
-    it('returns isError for unknown prompt name', async () => {
+    it('returns error message for unknown prompt name', async () => {
       new ForgeMCPServer(mockConfig);
       const getPrompt = getGetPromptHandler();
 
       const result = await getPrompt({
         params: { name: 'forge_unknown', arguments: {} },
-      }) as { isError: boolean; content: Array<{ text: string }> };
+      }) as { messages: Array<{ role: string; content: { type: string; text: string } }> };
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Unknown prompt: forge_unknown');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].content.text).toContain('Error: Unknown prompt: forge_unknown');
     });
   });
 });

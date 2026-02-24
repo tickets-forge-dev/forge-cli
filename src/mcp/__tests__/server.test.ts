@@ -243,8 +243,8 @@ describe('ForgeMCPServer', () => {
         params: { name: 'nonexistent_prompt', arguments: {} },
       });
 
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Unknown prompt: nonexistent_prompt');
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].content.text).toContain('Error: Unknown prompt: nonexistent_prompt');
     });
 
     it('handles missing arguments gracefully (defaults to empty object)', async () => {
