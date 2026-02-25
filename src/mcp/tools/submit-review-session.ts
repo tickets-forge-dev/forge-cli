@@ -101,16 +101,12 @@ export async function handleSubmitReviewSession(
       config
     );
 
+    const displayStatus = result.status.replace(/-/g, ' ');
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            success: true,
-            ticketId: result.ticketId,
-            status: result.status,
-            message: '✅ Review session submitted to Forge. The PM will see your answers and can re-bake the ticket.',
-          }),
+          text: `Review session submitted for ${result.ticketId}. Status is now "${displayStatus}". The PM will see your answers and can re-bake the ticket.`,
         },
       ],
     };

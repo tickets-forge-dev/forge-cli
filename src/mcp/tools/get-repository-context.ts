@@ -78,9 +78,7 @@ export async function handleGetRepositoryContext(
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              error: 'Path must be within the current working directory',
-            }),
+            text: 'Path must be within the current working directory',
           },
         ],
         isError: true,
@@ -100,16 +98,18 @@ export async function handleGetRepositoryContext(
       git.getFileTree(),
     ]);
 
+    const statusLines: string[] = [];
+    const s = status as { modified?: string[]; not_added?: string[]; staged?: string[] };
+    if (s.modified?.length) statusLines.push(`Modified: ${s.modified.join(', ')}`);
+    if (s.not_added?.length) statusLines.push(`Untracked: ${s.not_added.join(', ')}`);
+    if (s.staged?.length) statusLines.push(`Staged: ${s.staged.join(', ')}`);
+    const statusText = statusLines.length > 0 ? statusLines.join('\n') : 'Clean working tree';
+
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            branch,
-            workingDirectory: resolvedPath,
-            status,
-            fileTree,
-          }),
+          text: `Repository: ${resolvedPath}\nBranch: ${branch}\n\nStatus:\n${statusText}\n\nFiles:\n${fileTree}`,
         },
       ],
     };
@@ -121,7 +121,7 @@ export async function handleGetRepositoryContext(
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ error: 'Not a git repository' }),
+            text: 'Not a git repository',
           },
         ],
         isError: true,

@@ -45,18 +45,18 @@ export async function handleListTickets(
       };
     }
 
-    const result = tickets.map((t) => ({
-      id: t.id,
-      title: t.title,
-      status: t.status,
-      priority: t.priority ?? null,
-      assignedTo: t.assignedTo ?? null,
-    }));
+    const lines = tickets.map((t) => {
+      const status = t.status.replace(/-/g, ' ');
+      const priority = t.priority ? ` [${t.priority}]` : '';
+      const assignee = t.assignedTo ? ` (${t.assignedTo})` : '';
+      return `${t.id}  ${status.padEnd(20)} ${t.title}${priority}${assignee}`;
+    });
 
+    const header = `${tickets.length} ticket${tickets.length === 1 ? '' : 's'} (filter: ${filter}):\n`;
     const hint = '\n\nTo review a ticket: /forge:review <ticketId>\nTo execute a ticket: /forge:exec <ticketId>';
 
     return {
-      content: [{ type: 'text', text: JSON.stringify(result) + hint }],
+      content: [{ type: 'text', text: header + lines.join('\n') + hint }],
     };
   } catch (err) {
     const message = (err as Error).message ?? String(err);

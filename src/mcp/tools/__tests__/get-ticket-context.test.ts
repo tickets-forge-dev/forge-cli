@@ -55,7 +55,7 @@ describe('handleGetTicketContext', () => {
   });
 
   describe('success path', () => {
-    it('returns ticket data as JSON text content', async () => {
+    it('returns ticket data as human-readable text content', async () => {
       vi.mocked(get).mockResolvedValue(mockTicket);
 
       const result = await handleGetTicketContext({ ticketId: 'T-001' }, mockConfig);
@@ -64,10 +64,10 @@ describe('handleGetTicketContext', () => {
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.id).toBe('T-001');
-      expect(parsed.title).toBe('Fix authentication timeout');
-      expect(parsed.acceptanceCriteria).toEqual(['Auth token refreshes before expiry']);
+      const text = result.content[0].text;
+      expect(text).toContain('Ticket: T-001');
+      expect(text).toContain('Title: Fix authentication timeout');
+      expect(text).toContain('Auth token refreshes before expiry');
     });
 
     it('calls ApiService.get with correct path and config', async () => {
@@ -82,11 +82,10 @@ describe('handleGetTicketContext', () => {
       vi.mocked(get).mockResolvedValue(mockTicket);
 
       const result = await handleGetTicketContext({ ticketId: 'T-001' }, mockConfig);
-      const parsed = JSON.parse(result.content[0].text);
+      const text = result.content[0].text;
 
-      expect(parsed.fileChanges).toEqual([
-        { path: 'src/auth/token.ts', action: 'modify', notes: 'Add refresh logic' },
-      ]);
+      expect(text).toContain('[modify] src/auth/token.ts');
+      expect(text).toContain('Add refresh logic');
     });
 
     it('trims whitespace from ticketId before calling API', async () => {

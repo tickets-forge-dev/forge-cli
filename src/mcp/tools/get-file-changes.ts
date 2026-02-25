@@ -44,8 +44,18 @@ export async function handleGetFileChanges(
       `/tickets/${ticketId.trim()}`,
       config
     );
+    const changes = ticket.fileChanges ?? [];
+    if (changes.length === 0) {
+      return {
+        content: [{ type: 'text', text: 'No file changes specified for this ticket.' }],
+      };
+    }
+    const lines = changes.map((fc) => {
+      const note = fc.notes ? ` — ${fc.notes}` : '';
+      return `[${fc.action}] ${fc.path}${note}`;
+    });
     return {
-      content: [{ type: 'text', text: JSON.stringify(ticket.fileChanges ?? []) }],
+      content: [{ type: 'text', text: `File changes for ${ticketId}:\n${lines.join('\n')}` }],
     };
   } catch (err) {
     const message = (err as Error).message ?? String(err);

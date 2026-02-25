@@ -53,17 +53,17 @@ describe('handleSubmitReviewSession', () => {
   });
 
   describe('success path', () => {
-    it('returns success result with ticketId and status', async () => {
+    it('returns human-readable success message with ticketId and status', async () => {
       const result = await handleSubmitReviewSession(
         { ticketId: 'aec_abc123', qaItems: mockQAItems },
         mockConfig
       );
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.success).toBe(true);
-      expect(parsed.ticketId).toBe('aec_abc123');
-      expect(parsed.status).toBe('waiting-for-approval');
+      const text = result.content[0].text;
+      expect(text).toContain('Review session submitted');
+      expect(text).toContain('aec_abc123');
+      expect(text).toContain('waiting for approval');
     });
 
     it('calls ApiService.post with correct path and body', async () => {
@@ -92,14 +92,13 @@ describe('handleSubmitReviewSession', () => {
       );
     });
 
-    it('includes confirmation message in response', async () => {
+    it('includes confirmation message mentioning PM in response', async () => {
       const result = await handleSubmitReviewSession(
         { ticketId: 'aec_abc123', qaItems: mockQAItems },
         mockConfig
       );
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.message).toContain('PM');
+      expect(result.content[0].text).toContain('PM');
     });
   });
 

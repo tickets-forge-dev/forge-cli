@@ -173,7 +173,7 @@ describe('MCP Integration: server → real handlers', () => {
   // ── get_ticket_context ──────────────────────────────────────────────────────
 
   describe('get_ticket_context → real handler', () => {
-    it('fetches ticket and returns JSON text via real handler', async () => {
+    it('fetches ticket and returns human-readable text via real handler', async () => {
       vi.mocked(get).mockResolvedValue(mockTicket);
       new ForgeMCPServer(mockConfig);
       const callTool = getCallToolHandler();
@@ -184,9 +184,9 @@ describe('MCP Integration: server → real handlers', () => {
 
       expect(result.isError).toBeUndefined();
       expect(result.content[0].type).toBe('text');
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.id).toBe('T-001');
-      expect(parsed.title).toBe('Add login rate limiting');
+      const text = result.content[0].text;
+      expect(text).toContain('T-001');
+      expect(text).toContain('Add login rate limiting');
       expect(get).toHaveBeenCalledWith('/tickets/T-001', mockConfig);
     });
 
@@ -259,10 +259,10 @@ describe('MCP Integration: server → real handlers', () => {
       }) as { content: Array<{ text: string }>; isError?: boolean };
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed).toHaveProperty('branch');
-      expect(parsed).toHaveProperty('workingDirectory');
-      expect(parsed).toHaveProperty('status');
+      const text = result.content[0].text;
+      expect(text).toContain('Branch:');
+      expect(text).toContain('Repository:');
+      expect(text).toContain('Status:');
     });
 
     it('rejects paths outside current working directory', async () => {
@@ -274,8 +274,7 @@ describe('MCP Integration: server → real handlers', () => {
       }) as { content: Array<{ text: string }>; isError?: boolean };
 
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toBe('Path must be within the current working directory');
+      expect(result.content[0].text).toContain('Path must be within the current working directory');
     });
   });
 
@@ -300,9 +299,9 @@ describe('MCP Integration: server → real handlers', () => {
       }) as { content: Array<{ text: string }>; isError?: boolean };
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.ticketId).toBe('T-001');
-      expect(parsed.newStatus).toBe('created');
+      const text = result.content[0].text;
+      expect(text).toContain('T-001');
+      expect(text).toContain('status updated');
     });
 
     it('returns validation error when status is invalid', async () => {
@@ -346,9 +345,9 @@ describe('MCP Integration: server → real handlers', () => {
       }) as { content: Array<{ text: string }>; isError?: boolean };
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.success).toBe(true);
-      expect(parsed.ticketId).toBe('T-001');
+      const text = result.content[0].text;
+      expect(text).toContain('Review session submitted');
+      expect(text).toContain('T-001');
       expect(post).toHaveBeenCalledWith(
         '/tickets/T-001/review-session',
         { qaItems },

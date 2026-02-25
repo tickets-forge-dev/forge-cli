@@ -72,7 +72,7 @@ describe('handleGetFileChanges', () => {
   });
 
   describe('success path', () => {
-    it('returns fileChanges as JSON array when present', async () => {
+    it('returns fileChanges as human-readable text when present', async () => {
       vi.mocked(get).mockResolvedValue(mockTicketWithChanges);
 
       const result = await handleGetFileChanges({ ticketId: 'T-001' }, mockConfig);
@@ -81,11 +81,12 @@ describe('handleGetFileChanges', () => {
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed).toHaveLength(3);
-      expect(parsed[0]).toEqual({ path: 'src/auth/token.ts', action: 'modify', notes: 'Add refresh logic' });
-      expect(parsed[1]).toEqual({ path: 'src/auth/middleware.ts', action: 'create' });
-      expect(parsed[2]).toEqual({ path: 'src/auth/legacy.ts', action: 'delete' });
+      const text = result.content[0].text;
+      expect(text).toContain('File changes for T-001');
+      expect(text).toContain('[modify] src/auth/token.ts');
+      expect(text).toContain('Add refresh logic');
+      expect(text).toContain('[create] src/auth/middleware.ts');
+      expect(text).toContain('[delete] src/auth/legacy.ts');
     });
 
     it('calls ApiService.get with correct path and config', async () => {
@@ -96,24 +97,22 @@ describe('handleGetFileChanges', () => {
       expect(get).toHaveBeenCalledWith('/tickets/T-001', mockConfig);
     });
 
-    it('returns empty array when ticket has no fileChanges field', async () => {
+    it('returns "no file changes" message when ticket has no fileChanges field', async () => {
       vi.mocked(get).mockResolvedValue(mockTicketNoChanges);
 
       const result = await handleGetFileChanges({ ticketId: 'T-002' }, mockConfig);
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed).toEqual([]);
+      expect(result.content[0].text).toContain('No file changes specified');
     });
 
-    it('returns empty array when ticket has empty fileChanges array', async () => {
+    it('returns "no file changes" message when ticket has empty fileChanges array', async () => {
       vi.mocked(get).mockResolvedValue(mockTicketEmptyChanges);
 
       const result = await handleGetFileChanges({ ticketId: 'T-003' }, mockConfig);
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed).toEqual([]);
+      expect(result.content[0].text).toContain('No file changes specified');
     });
 
     it('trims whitespace from ticketId before calling API', async () => {

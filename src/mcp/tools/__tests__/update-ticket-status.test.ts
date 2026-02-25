@@ -52,17 +52,17 @@ describe('handleUpdateTicketStatus', () => {
   });
 
   describe('success path', () => {
-    it('returns { success, ticketId, newStatus } on success', async () => {
+    it('returns human-readable success message on success', async () => {
       const result = await handleUpdateTicketStatus(
         { ticketId: 'T-001', status: AECStatus.CREATED },
         mockConfig
       );
 
       expect(result.isError).toBeUndefined();
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.success).toBe(true);
-      expect(parsed.ticketId).toBe('T-001');
-      expect(parsed.newStatus).toBe(AECStatus.CREATED);
+      const text = result.content[0].text;
+      expect(text).toContain('T-001');
+      expect(text).toContain('status updated');
+      expect(text).toContain('created');
     });
 
     it('calls ApiService.patch with correct path and body', async () => {

@@ -66,7 +66,7 @@ describe('handleGetRepositoryContext', () => {
   });
 
   describe('success path', () => {
-    it('returns correct JSON shape with branch, workingDirectory, status, fileTree', async () => {
+    it('returns human-readable text with repository, branch, status, and files', async () => {
       const result = await handleGetRepositoryContext(
         { path: '.' },
         mockConfig
@@ -76,11 +76,11 @@ describe('handleGetRepositoryContext', () => {
       expect(result.content).toHaveLength(1);
       expect(result.content[0].type).toBe('text');
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.branch).toBe('main');
-      expect(parsed.workingDirectory).toBe(process.cwd());
-      expect(parsed.status).toEqual(mockGitResult.status);
-      expect(parsed.fileTree).toBe(mockGitResult.fileTree);
+      const text = result.content[0].text;
+      expect(text).toContain('Branch: main');
+      expect(text).toContain(`Repository: ${process.cwd()}`);
+      expect(text).toContain('Modified: src/auth.ts');
+      expect(text).toContain('src/a.ts');
     });
 
     it('instantiates GitService with a valid path within cwd', async () => {
@@ -92,23 +92,20 @@ describe('handleGetRepositoryContext', () => {
     it('defaults workingDirectory to process.cwd() when path not provided', async () => {
       const result = await handleGetRepositoryContext({}, mockConfig);
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.workingDirectory).toBe(process.cwd());
+      expect(result.content[0].text).toContain(`Repository: ${process.cwd()}`);
       expect(vi.mocked(GitService)).toHaveBeenCalledWith(process.cwd());
     });
 
     it('defaults to process.cwd() when path is empty string', async () => {
       const result = await handleGetRepositoryContext({ path: '' }, mockConfig);
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.workingDirectory).toBe(process.cwd());
+      expect(result.content[0].text).toContain(`Repository: ${process.cwd()}`);
     });
 
     it('defaults to process.cwd() when path is whitespace only', async () => {
       const result = await handleGetRepositoryContext({ path: '   ' }, mockConfig);
 
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.workingDirectory).toBe(process.cwd());
+      expect(result.content[0].text).toContain(`Repository: ${process.cwd()}`);
     });
   });
 
@@ -120,8 +117,7 @@ describe('handleGetRepositoryContext', () => {
       );
 
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toBe('Path must be within the current working directory');
+      expect(result.content[0].text).toBe('Path must be within the current working directory');
     });
 
     it('rejects parent directory traversal (..)', async () => {
@@ -131,8 +127,7 @@ describe('handleGetRepositoryContext', () => {
       );
 
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toBe('Path must be within the current working directory');
+      expect(result.content[0].text).toBe('Path must be within the current working directory');
     });
 
     it('allows paths within the current working directory', async () => {
@@ -147,7 +142,7 @@ describe('handleGetRepositoryContext', () => {
   });
 
   describe('error paths', () => {
-    it('returns structured { error: "Not a git repository" } for non-git directory', async () => {
+    it('returns "Not a git repository" for non-git directory', async () => {
       mockGetBranch.mockRejectedValue(
         new Error('fatal: not a git repository (or any of the parent directories): .git')
       );
@@ -155,11 +150,10 @@ describe('handleGetRepositoryContext', () => {
       const result = await handleGetRepositoryContext({ path: '.' }, mockConfig);
 
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toBe('Not a git repository');
+      expect(result.content[0].text).toBe('Not a git repository');
     });
 
-    it('returns structured error for ENOENT (path does not exist)', async () => {
+    it('returns "Not a git repository" for ENOENT (path does not exist)', async () => {
       mockGetBranch.mockRejectedValue(
         new Error('ENOENT: no such file or directory')
       );
@@ -168,8 +162,7 @@ describe('handleGetRepositoryContext', () => {
       const result = await handleGetRepositoryContext({}, mockConfig);
 
       expect(result.isError).toBe(true);
-      const parsed = JSON.parse(result.content[0].text);
-      expect(parsed.error).toBe('Not a git repository');
+      expect(result.content[0].text).toBe('Not a git repository');
     });
 
     it('returns raw error message for unexpected errors', async () => {

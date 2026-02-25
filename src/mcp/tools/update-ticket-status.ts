@@ -66,15 +66,12 @@ export async function handleUpdateTicketStatus(
       config
     );
 
+    const displayStatus = result.status.replace(/-/g, ' ');
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            success: true,
-            ticketId: ticketId.trim(),
-            newStatus: result.status,
-          }),
+          text: `Ticket ${ticketId.trim()} status updated to "${displayStatus}".`,
         },
       ],
     };

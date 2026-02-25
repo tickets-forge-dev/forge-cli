@@ -1,7 +1,45 @@
 import * as ApiService from '../../services/api.service.js';
 import type { ForgeConfig } from '../../services/config.service.js';
-import type { TicketDetail } from '../../types/ticket.js';
+import type { TicketDetail, FileChange } from '../../types/ticket.js';
 import type { ToolResult } from '../types.js';
+
+function formatTicket(t: TicketDetail): string {
+  const lines: string[] = [
+    `Ticket: ${t.id}`,
+    `Title: ${t.title}`,
+    `Status: ${t.status}`,
+  ];
+  if (t.priority) lines.push(`Priority: ${t.priority}`);
+  if (t.assignedTo) lines.push(`Assigned to: ${t.assignedTo}`);
+  lines.push('');
+  if (t.description) lines.push(`Description:\n${t.description}\n`);
+  if (t.problemStatement) lines.push(`Problem Statement:\n${t.problemStatement}\n`);
+  if (t.solution) lines.push(`Solution:\n${t.solution}\n`);
+  if (t.acceptanceCriteria?.length) {
+    lines.push('Acceptance Criteria:');
+    t.acceptanceCriteria.forEach((ac, i) => lines.push(`  ${i + 1}. ${ac}`));
+    lines.push('');
+  }
+  if (t.fileChanges?.length) {
+    lines.push('File Changes:');
+    t.fileChanges.forEach((fc: FileChange) => {
+      const note = fc.notes ? ` — ${fc.notes}` : '';
+      lines.push(`  [${fc.action}] ${fc.path}${note}`);
+    });
+    lines.push('');
+  }
+  if (t.apiChanges) lines.push(`API Changes:\n${t.apiChanges}\n`);
+  if (t.testPlan) lines.push(`Test Plan:\n${t.testPlan}\n`);
+  if (t.reviewSession?.qaItems?.length) {
+    lines.push('Review Q&A:');
+    t.reviewSession.qaItems.forEach((qa, i) => {
+      lines.push(`  Q${i + 1}: ${qa.question}`);
+      lines.push(`  A${i + 1}: ${qa.answer}`);
+    });
+    lines.push('');
+  }
+  return lines.join('\n');
+}
 
 // MCP tool definition — returned by ListTools so Claude Code can discover it
 export const getTicketContextToolDefinition = {
@@ -44,7 +82,7 @@ export async function handleGetTicketContext(
       config
     );
     return {
-      content: [{ type: 'text', text: JSON.stringify(ticket) }],
+      content: [{ type: 'text', text: formatTicket(ticket) }],
     };
   } catch (err) {
     const message = (err as Error).message ?? String(err);
