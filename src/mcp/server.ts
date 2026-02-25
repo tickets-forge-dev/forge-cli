@@ -54,7 +54,7 @@ export class ForgeMCPServer {
 
   constructor(private config: ForgeConfig) {
     this.server = new Server(
-      { name: 'forge', version: '0.1.0' },
+      { name: 'forge', version: '1.0.0' },
       { capabilities: { tools: {}, prompts: {} } }
     );
 

@@ -11,7 +11,7 @@ const program = new Command();
 
 program
   .name('forge')
-  .version('0.1.0')
+  .version('1.0.0')
   .description('CLI for Forge — authenticate, browse tickets, and execute AI-assisted implementations via MCP');
 
 program.addCommand(loginCommand);

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as path from 'path';
 
 // Mock fs/promises before importing the module under test
 vi.mock('fs/promises', () => ({
@@ -17,6 +18,9 @@ vi.mock('os', () => ({
 
 import * as fs from 'fs/promises';
 import { load, save, clear, getConfigPath, type ForgeConfig } from '../config.service';
+
+const expectedConfigDir = path.join('/home/testuser', '.forge');
+const expectedConfigPath = path.join('/home/testuser', '.forge', 'config.json');
 
 const validConfig: ForgeConfig = {
   accessToken: 'access-token-abc',
@@ -37,7 +41,7 @@ describe('config.service', () => {
 
   describe('getConfigPath', () => {
     it('returns ~/.forge/config.json path', () => {
-      expect(getConfigPath()).toBe('/home/testuser/.forge/config.json');
+      expect(getConfigPath()).toBe(expectedConfigPath);
     });
   });
 
@@ -91,16 +95,16 @@ describe('config.service', () => {
       await save(validConfig);
 
       expect(fs.mkdir).toHaveBeenCalledWith(
-        '/home/testuser/.forge',
+        expectedConfigDir,
         { recursive: true }
       );
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/home/testuser/.forge/config.json',
+        expectedConfigPath,
         JSON.stringify(validConfig, null, 2),
         'utf-8'
       );
       expect(fs.chmod).toHaveBeenCalledWith(
-        '/home/testuser/.forge/config.json',
+        expectedConfigPath,
         0o600
       );
     });
@@ -111,7 +115,7 @@ describe('config.service', () => {
       vi.mocked(fs.unlink).mockResolvedValue(undefined);
 
       await clear();
-      expect(fs.unlink).toHaveBeenCalledWith('/home/testuser/.forge/config.json');
+      expect(fs.unlink).toHaveBeenCalledWith(expectedConfigPath);
     });
 
     it('does not throw if file does not exist (ENOENT)', async () => {

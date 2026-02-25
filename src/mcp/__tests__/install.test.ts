@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as path from 'path';
 
 vi.mock('child_process', () => ({
   execSync: vi.fn(),
@@ -132,7 +133,7 @@ describe('writeMcpJson', () => {
     await writeMcpJson('/my/project');
 
     expect(writeFile).toHaveBeenCalledWith(
-      '/my/project/.mcp.json',
+      path.join('/my/project', '.mcp.json'),
       expect.any(String),
       'utf-8'
     );
