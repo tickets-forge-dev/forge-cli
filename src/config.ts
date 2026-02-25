@@ -5,7 +5,37 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.development') });
 }
 
+// Warn if TLS certificate validation has been disabled — tokens would be
+// exposed to man-in-the-middle attacks.
+if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
+  process.stderr.write(
+    '\x1b[33m⚠  WARNING: NODE_TLS_REJECT_UNAUTHORIZED=0 disables TLS certificate validation.\n' +
+    '   Your auth tokens may be exposed to interception. Unset this variable in production.\x1b[0m\n'
+  );
+}
+
 // API_URL must include the /api prefix (NestJS global prefix).
 // Override via FORGE_API_URL env var for local dev or self-hosted deployments.
-export const API_URL = process.env.FORGE_API_URL ?? 'https://www.forge-ai.dev/api';
-export const APP_URL = process.env.FORGE_APP_URL ?? 'https://www.forge-ai.dev';
+const rawApiUrl = process.env.FORGE_API_URL;
+const rawAppUrl = process.env.FORGE_APP_URL;
+
+// In production, only allow HTTPS URLs to prevent token interception.
+function validateUrl(url: string, envName: string): string {
+  if (process.env.NODE_ENV !== 'production') return url;
+  if (!url.startsWith('https://')) {
+    process.stderr.write(
+      `\x1b[33m⚠  WARNING: ${envName}=${url} is not HTTPS. ` +
+      `Auth tokens may be sent over an insecure connection.\x1b[0m\n`
+    );
+  }
+  return url;
+}
+
+export const API_URL = validateUrl(
+  rawApiUrl ?? 'https://www.forge-ai.dev/api',
+  'FORGE_API_URL'
+);
+export const APP_URL = validateUrl(
+  rawAppUrl ?? 'https://www.forge-ai.dev',
+  'FORGE_APP_URL'
+);

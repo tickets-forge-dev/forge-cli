@@ -1,3 +1,5 @@
+import * as path from 'path';
+import * as fs from 'fs';
 import type { ForgeConfig } from '../../services/config.service.js';
 import { GitService } from '../../services/git.service.js';
 import type { ToolResult } from '../types.js';
@@ -32,6 +34,30 @@ function isNonGitError(message: string): boolean {
 }
 
 /**
+ * Validates that the requested path is safe to access.
+ * Must be within or equal to the current working directory.
+ * Resolves symlinks to prevent traversal via symlink chains.
+ */
+function validatePath(requested: string): string | null {
+  const cwd = process.cwd();
+  let resolved: string;
+  try {
+    // Resolve to absolute and normalize (handles .., symlinks, etc.)
+    resolved = fs.realpathSync(path.resolve(cwd, requested));
+  } catch {
+    // Path doesn't exist — let git handle the error naturally
+    resolved = path.resolve(cwd, requested);
+  }
+  const normalizedCwd = path.resolve(cwd);
+
+  // Must be cwd itself or a child of cwd
+  if (resolved !== normalizedCwd && !resolved.startsWith(normalizedCwd + path.sep)) {
+    return null;
+  }
+  return resolved;
+}
+
+/**
  * Handles the get_repository_context MCP tool call.
  * Reads branch, status, and file tree from the git repository at the given path.
  * Returns a structured error (not a crash) when called outside a git repository.
@@ -43,10 +69,27 @@ export async function handleGetRepositoryContext(
   config: ForgeConfig
 ): Promise<ToolResult> {
   const pathArg = args['path'];
-  const resolvedPath =
-    typeof pathArg === 'string' && pathArg.trim() !== ''
-      ? pathArg.trim()
-      : process.cwd();
+  let resolvedPath: string;
+
+  if (typeof pathArg === 'string' && pathArg.trim() !== '') {
+    const validated = validatePath(pathArg.trim());
+    if (validated === null) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              error: 'Path must be within the current working directory',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+    resolvedPath = validated;
+  } else {
+    resolvedPath = process.cwd();
+  }
 
   const git = new GitService(resolvedPath);
 

@@ -253,8 +253,9 @@ describe('MCP Integration: server → real handlers', () => {
       new ForgeMCPServer(mockConfig);
       const callTool = getCallToolHandler();
 
+      // Use '.' (cwd) — path traversal protection blocks absolute paths outside cwd
       const result = await callTool({
-        params: { name: 'get_repository_context', arguments: { path: '/my/repo' } },
+        params: { name: 'get_repository_context', arguments: { path: '.' } },
       }) as { content: Array<{ text: string }>; isError?: boolean };
 
       expect(result.isError).toBeUndefined();
@@ -262,6 +263,19 @@ describe('MCP Integration: server → real handlers', () => {
       expect(parsed).toHaveProperty('branch');
       expect(parsed).toHaveProperty('workingDirectory');
       expect(parsed).toHaveProperty('status');
+    });
+
+    it('rejects paths outside current working directory', async () => {
+      new ForgeMCPServer(mockConfig);
+      const callTool = getCallToolHandler();
+
+      const result = await callTool({
+        params: { name: 'get_repository_context', arguments: { path: '/etc/passwd' } },
+      }) as { content: Array<{ text: string }>; isError?: boolean };
+
+      expect(result.isError).toBe(true);
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.error).toBe('Path must be within the current working directory');
     });
   });
 
