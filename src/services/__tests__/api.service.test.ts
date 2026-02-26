@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { get, patch } from '../api.service';
+import { get, patch, ApiError } from '../api.service';
 import type { ForgeConfig } from '../config.service';
 
 // Mock dependencies
@@ -143,10 +143,57 @@ describe('api.service', () => {
     });
   });
 
-  describe('get — other errors', () => {
-    it('throws generic error on other non-OK responses', async () => {
+  describe('get — other errors (ApiError)', () => {
+    it('throws ApiError with statusCode on non-OK responses', async () => {
+      mockFetch.mockResolvedValue(mockResponse({}, 403));
+
+      try {
+        await get('/tickets', config);
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        expect((err as ApiError).statusCode).toBe(403);
+        expect((err as ApiError).message).toContain('permission');
+      }
+    });
+
+    it('throws ApiError with 404 for not found', async () => {
+      mockFetch.mockResolvedValue(mockResponse({}, 404));
+
+      try {
+        await get('/tickets/T-999', config);
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        expect((err as ApiError).statusCode).toBe(404);
+        expect((err as ApiError).message).toContain('not found');
+      }
+    });
+
+    it('throws ApiError with 429 for rate limiting', async () => {
+      mockFetch.mockResolvedValue(mockResponse({}, 429));
+
+      try {
+        await get('/tickets', config);
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        expect((err as ApiError).statusCode).toBe(429);
+        expect((err as ApiError).message).toContain('Rate limited');
+      }
+    });
+
+    it('throws ApiError with friendly message for unknown status codes', async () => {
       mockFetch.mockResolvedValue(mockResponse({}, 400));
-      await expect(get('/tickets', config)).rejects.toThrow('API error 400');
+
+      try {
+        await get('/tickets', config);
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        expect((err as ApiError).statusCode).toBe(400);
+        expect((err as ApiError).message).toContain('Unexpected server response (400)');
+      }
     });
   });
 

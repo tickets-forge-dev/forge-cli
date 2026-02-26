@@ -87,7 +87,7 @@ describe('config.service', () => {
   });
 
   describe('save', () => {
-    it('creates directory, writes JSON, and sets chmod 600', async () => {
+    it('creates directory and writes JSON', async () => {
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
       vi.mocked(fs.chmod).mockResolvedValue(undefined);
@@ -103,10 +103,39 @@ describe('config.service', () => {
         JSON.stringify(validConfig, null, 2),
         'utf-8'
       );
+    });
+
+    it('sets chmod 600 on non-Windows platforms', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      vi.mocked(fs.chmod).mockResolvedValue(undefined);
+
+      await save(validConfig);
+
       expect(fs.chmod).toHaveBeenCalledWith(
         expectedConfigPath,
         0o600
       );
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    });
+
+    it('skips chmod on Windows', async () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+      vi.mocked(fs.chmod).mockResolvedValue(undefined);
+
+      await save(validConfig);
+
+      expect(fs.chmod).not.toHaveBeenCalled();
+
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     });
   });
 

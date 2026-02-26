@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../services/config.service', () => ({
-  load: vi.fn(),
-}));
-
-vi.mock('../../services/auth.service', () => ({
-  isLoggedIn: vi.fn(),
+vi.mock('../../middleware/auth-guard', () => ({
+  requireAuth: vi.fn(),
 }));
 
 vi.mock('../../services/api.service', () => ({
@@ -20,8 +16,7 @@ vi.mock('../../ui/formatters', () => ({
   statusIcon: vi.fn(() => '●'),
 }));
 
-import { load } from '../../services/config.service';
-import { isLoggedIn } from '../../services/auth.service';
+import { requireAuth } from '../../middleware/auth-guard';
 import { get } from '../../services/api.service';
 import { listCommand } from '../list';
 import type { TicketListItem } from '../../types/ticket';
@@ -57,8 +52,7 @@ describe('listCommand (non-TTY path)', () => {
     originalIsTTY = process.stdout.isTTY;
     Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true });
 
-    vi.mocked(load).mockResolvedValue(mockConfig);
-    vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(requireAuth).mockResolvedValue(mockConfig);
   });
 
   afterEach(() => {
@@ -71,8 +65,11 @@ describe('listCommand (non-TTY path)', () => {
     });
   });
 
-  it('exits 1 when not logged in', async () => {
-    vi.mocked(isLoggedIn).mockReturnValue(false);
+  it('exits 1 when not logged in (requireAuth exits)', async () => {
+    vi.mocked(requireAuth).mockImplementation(async () => {
+      process.exit(1);
+      return undefined as never;
+    });
     vi.mocked(get).mockResolvedValue([]); // prevent unhandled throw if code continues past exit
 
     await listCommand.parseAsync(['node', 'list']);

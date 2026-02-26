@@ -39,15 +39,18 @@ export async function load(): Promise<ForgeConfig | null> {
   }
 
   // Warn if file permissions are not 0o600 (security check)
-  try {
-    const stat = await fs.stat(configPath);
-    if ((stat.mode & 0o777) !== 0o600) {
-      process.stderr.write(
-        `⚠️  Warning: ~/.forge/config.json permissions are not 600. Run: chmod 600 ${configPath}\n`
-      );
+  // Skip on Windows: stat.mode doesn't reflect NTFS ACLs and chmod is a no-op
+  if (process.platform !== 'win32') {
+    try {
+      const stat = await fs.stat(configPath);
+      if ((stat.mode & 0o777) !== 0o600) {
+        process.stderr.write(
+          `⚠️  Warning: ~/.forge/config.json permissions are not 600. Run: chmod 600 ${configPath}\n`
+        );
+      }
+    } catch {
+      // Non-fatal: stat failure doesn't block loading
     }
-  } catch {
-    // Non-fatal: stat failure doesn't block loading
   }
 
   let parsed: unknown;
@@ -73,7 +76,10 @@ export async function save(config: ForgeConfig): Promise<void> {
   const configPath = getConfigPath();
   await fs.mkdir(CONFIG_DIR, { recursive: true });
   await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
-  await fs.chmod(configPath, 0o600);
+  // chmod is a no-op on Windows — NTFS uses ACLs, not POSIX mode bits
+  if (process.platform !== 'win32') {
+    await fs.chmod(configPath, 0o600);
+  }
 }
 
 export async function clear(): Promise<void> {

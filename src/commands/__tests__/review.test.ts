@@ -1,25 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../services/config.service', () => ({
-  load: vi.fn(),
-}));
-
-vi.mock('../../services/auth.service', () => ({
-  isLoggedIn: vi.fn(),
+vi.mock('../../middleware/auth-guard', () => ({
+  requireAuth: vi.fn(),
 }));
 
 vi.mock('../../services/api.service', () => ({
   get: vi.fn(),
   patch: vi.fn(),
+  ApiError: class ApiError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.name = 'ApiError';
+      this.statusCode = statusCode;
+    }
+  },
 }));
 
 vi.mock('../../services/claude.service', () => ({
   spawnClaude: vi.fn(),
 }));
 
-import { load } from '../../services/config.service';
-import { isLoggedIn } from '../../services/auth.service';
-import { get, patch } from '../../services/api.service';
+import { requireAuth } from '../../middleware/auth-guard';
+import { get, patch, ApiError } from '../../services/api.service';
 import { spawnClaude } from '../../services/claude.service';
 import { reviewCommand } from '../review';
 import { AECStatus, type TicketDetail } from '../../types/ticket';
@@ -57,8 +60,7 @@ describe('reviewCommand', () => {
     mockStderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation((() => true) as never);
     mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    vi.mocked(load).mockResolvedValue(mockConfig);
-    vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(requireAuth).mockResolvedValue(mockConfig);
     vi.mocked(patch).mockResolvedValue({});
     vi.mocked(spawnClaude).mockResolvedValue(0);
   });
@@ -69,17 +71,19 @@ describe('reviewCommand', () => {
     mockConsoleError.mockRestore();
   });
 
-  it('exits 1 when not logged in', async () => {
-    vi.mocked(isLoggedIn).mockReturnValue(false);
-    vi.mocked(get).mockResolvedValue(makeTicket(AECStatus.READY)); // prevent unhandled throw if code continues past exit
+  it('exits 1 when not logged in (requireAuth exits)', async () => {
+    vi.mocked(requireAuth).mockImplementation(async () => {
+      process.exit(1);
+      return undefined as never;
+    });
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  it('exits 1 with "Ticket not found" message for 404', async () => {
-    vi.mocked(get).mockRejectedValue(new Error('API error 404: Not Found'));
+  it('exits 1 with "Ticket not found" message for ApiError 404', async () => {
+    vi.mocked(get).mockRejectedValue(new ApiError(404, 'Resource not found.'));
 
     await reviewCommand.parseAsync(['node', 'review', 'T-001']);
 

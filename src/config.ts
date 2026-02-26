@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import chalk from 'chalk';
 
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config({ path: path.resolve(process.cwd(), '.env.development') });
@@ -9,8 +10,10 @@ if (process.env.NODE_ENV !== 'production') {
 // exposed to man-in-the-middle attacks.
 if (process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0') {
   process.stderr.write(
-    '\x1b[33m⚠  WARNING: NODE_TLS_REJECT_UNAUTHORIZED=0 disables TLS certificate validation.\n' +
-    '   Your auth tokens may be exposed to interception. Unset this variable in production.\x1b[0m\n'
+    chalk.yellow(
+      '⚠  WARNING: NODE_TLS_REJECT_UNAUTHORIZED=0 disables TLS certificate validation.\n' +
+      '   Your auth tokens may be exposed to interception. Unset this variable in production.\n'
+    )
   );
 }
 
@@ -24,8 +27,10 @@ function validateUrl(url: string, envName: string): string {
   if (process.env.NODE_ENV !== 'production') return url;
   if (!url.startsWith('https://')) {
     process.stderr.write(
-      `\x1b[33m⚠  WARNING: ${envName}=${url} is not HTTPS. ` +
-      `Auth tokens may be sent over an insecure connection.\x1b[0m\n`
+      chalk.yellow(
+        `⚠  WARNING: ${envName}=${url} is not HTTPS. ` +
+        `Auth tokens may be sent over an insecure connection.\n`
+      )
     );
   }
   return url;

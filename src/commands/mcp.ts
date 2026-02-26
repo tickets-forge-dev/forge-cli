@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as ConfigService from '../services/config.service.js';
-import { isLoggedIn } from '../services/auth.service.js';
+import { requireAuth } from '../middleware/auth-guard';
 import { ForgeMCPServer } from '../mcp/server.js';
 import { tryRegisterMcpServer, writeMcpJson } from '../mcp/install.js';
 
@@ -14,15 +13,9 @@ export const mcpCommand = new Command('mcp')
     // .mcp.json / ~/.claude.json config and keeps it running as an MCP server.
     // All output MUST go to stderr — stdout is reserved for MCP protocol frames.
     try {
-      const config = await ConfigService.load();
-      if (!isLoggedIn(config)) {
-        process.stderr.write(
-          chalk.red('Not logged in. Run `forge login` first.\n')
-        );
-        process.exit(1);
-      }
+      const config = await requireAuth();
 
-      const server = new ForgeMCPServer(config!);
+      const server = new ForgeMCPServer(config);
       await server.start();
 
       process.once('SIGINT', () => {

@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../services/config.service.js', () => ({
-  load: vi.fn(),
-}));
-
-vi.mock('../../services/auth.service.js', () => ({
-  isLoggedIn: vi.fn(),
+vi.mock('../../middleware/auth-guard', () => ({
+  requireAuth: vi.fn(),
 }));
 
 vi.mock('../../mcp/server.js', () => ({
@@ -20,8 +16,7 @@ vi.mock('../../mcp/install.js', () => ({
   tryRegisterMcpServer: vi.fn().mockResolvedValue('registered'),
 }));
 
-import { load } from '../../services/config.service.js';
-import { isLoggedIn } from '../../services/auth.service.js';
+import { requireAuth } from '../../middleware/auth-guard';
 import { writeMcpJson, tryRegisterMcpServer } from '../../mcp/install.js';
 import { mcpCommand } from '../mcp';
 
@@ -45,8 +40,7 @@ describe('mcpCommand install subcommand', () => {
     mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
     mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    vi.mocked(load).mockResolvedValue(mockConfig);
-    vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(requireAuth).mockResolvedValue(mockConfig);
   });
 
   afterEach(() => {

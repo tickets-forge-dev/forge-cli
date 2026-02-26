@@ -1,25 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../services/config.service', () => ({
-  load: vi.fn(),
-}));
-
-vi.mock('../../services/auth.service', () => ({
-  isLoggedIn: vi.fn(),
+vi.mock('../../middleware/auth-guard', () => ({
+  requireAuth: vi.fn(),
 }));
 
 vi.mock('../../services/api.service', () => ({
   get: vi.fn(),
   patch: vi.fn(),
+  ApiError: class ApiError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.name = 'ApiError';
+      this.statusCode = statusCode;
+    }
+  },
 }));
 
 vi.mock('../../services/claude.service', () => ({
   spawnClaude: vi.fn(),
 }));
 
-import { load } from '../../services/config.service';
-import { isLoggedIn } from '../../services/auth.service';
-import { get, patch } from '../../services/api.service';
+import { requireAuth } from '../../middleware/auth-guard';
+import { get, patch, ApiError } from '../../services/api.service';
 import { spawnClaude } from '../../services/claude.service';
 import { executeCommand } from '../execute';
 import { AECStatus } from '../../types/ticket';
@@ -59,8 +62,7 @@ describe('executeCommand', () => {
     });
     mockExit = vi.spyOn(process, 'exit').mockImplementation((() => {}) as never);
 
-    vi.mocked(load).mockResolvedValue(mockConfig);
-    vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(requireAuth).mockResolvedValue(mockConfig);
     vi.mocked(get).mockResolvedValue(mockTicket);
     vi.mocked(patch).mockResolvedValue(mockTicket);
     vi.mocked(spawnClaude).mockResolvedValue(0);
@@ -100,8 +102,11 @@ describe('executeCommand', () => {
     expect(mockExit.mock.calls[0][0]).toBe(1);
   });
 
-  it('exits 1 and prints error when not logged in', async () => {
-    vi.mocked(isLoggedIn).mockReturnValue(false);
+  it('exits 1 when not logged in (requireAuth exits)', async () => {
+    vi.mocked(requireAuth).mockImplementation(async () => {
+      process.exit(1);
+      return undefined as never;
+    });
 
     await executeCommand.parseAsync(['node', 'execute', 'T-001']);
 
@@ -125,5 +130,18 @@ describe('executeCommand', () => {
 
     expect(spawnClaude).toHaveBeenCalledWith('execute', 'T-001');
     expect(mockExit).toHaveBeenCalledWith(0);
+  });
+
+  it('prints "Ticket not found" and exits 1 for ApiError 404', async () => {
+    vi.mocked(get).mockRejectedValue(new ApiError(404, 'Resource not found.'));
+    const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await executeCommand.parseAsync(['node', 'execute', 'T-001']);
+
+    expect(mockConsoleError).toHaveBeenCalledWith(
+      expect.stringContaining('Ticket not found: T-001')
+    );
+    expect(mockExit).toHaveBeenCalledWith(1);
+    mockConsoleError.mockRestore();
   });
 });

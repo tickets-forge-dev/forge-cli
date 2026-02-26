@@ -1,24 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../services/config.service', () => ({
-  load: vi.fn(),
-}));
-
-vi.mock('../../services/auth.service', () => ({
-  isLoggedIn: vi.fn(),
+vi.mock('../../middleware/auth-guard', () => ({
+  requireAuth: vi.fn(),
 }));
 
 vi.mock('../../services/api.service', () => ({
   get: vi.fn(),
+  ApiError: class ApiError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.name = 'ApiError';
+      this.statusCode = statusCode;
+    }
+  },
 }));
 
 vi.mock('../../ui/pager', () => ({
   printTicketDetail: vi.fn(),
 }));
 
-import { load } from '../../services/config.service';
-import { isLoggedIn } from '../../services/auth.service';
-import { get } from '../../services/api.service';
+import { requireAuth } from '../../middleware/auth-guard';
+import { get, ApiError } from '../../services/api.service';
 import { printTicketDetail } from '../../ui/pager';
 import { showCommand } from '../show';
 import { AECStatus } from '../../types/ticket';
@@ -53,8 +56,7 @@ describe('showCommand', () => {
     mockExit = vi.spyOn(process, 'exit').mockImplementation((() => {}) as never);
     mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    vi.mocked(load).mockResolvedValue(mockConfig);
-    vi.mocked(isLoggedIn).mockReturnValue(true);
+    vi.mocked(requireAuth).mockResolvedValue(mockConfig);
   });
 
   afterEach(() => {
@@ -62,8 +64,11 @@ describe('showCommand', () => {
     mockConsoleError.mockRestore();
   });
 
-  it('exits 1 when not logged in', async () => {
-    vi.mocked(isLoggedIn).mockReturnValue(false);
+  it('exits 1 when not logged in (requireAuth exits)', async () => {
+    vi.mocked(requireAuth).mockImplementation(async () => {
+      process.exit(1);
+      return undefined as never;
+    });
     vi.mocked(get).mockResolvedValue(mockTicket); // prevent unhandled throw if code continues past exit
 
     await showCommand.parseAsync(['node', 'show', 'T-001']);
@@ -95,8 +100,8 @@ describe('showCommand', () => {
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
-  it('prints "Ticket not found" and exits 1 for 404 errors', async () => {
-    vi.mocked(get).mockRejectedValue(new Error('API error 404: Not Found'));
+  it('prints "Ticket not found" and exits 1 for ApiError 404', async () => {
+    vi.mocked(get).mockRejectedValue(new ApiError(404, 'Resource not found.'));
 
     await showCommand.parseAsync(['node', 'show', 'T-001']);
 

@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as ConfigService from '../services/config.service';
-import { isLoggedIn } from '../services/auth.service';
+import { requireAuth } from '../middleware/auth-guard';
 import * as ApiService from '../services/api.service';
+import { ApiError } from '../services/api.service';
 import { statusIcon } from '../ui/formatters';
 import { AECStatus, type TicketDetail } from '../types/ticket';
 import { spawnClaude } from '../services/claude.service';
@@ -17,21 +17,16 @@ export const executeCommand = new Command('execute')
   .argument('<ticketId>', 'The ticket ID to execute')
   .action(async (ticketId: string) => {
     try {
-      const config = await ConfigService.load();
-      if (!isLoggedIn(config)) {
-        console.error(chalk.red('Not logged in. Run `forge login` first.'));
-        process.exit(1);
-      }
+      const config = await requireAuth();
 
       let ticket: TicketDetail;
       try {
         ticket = await ApiService.get<TicketDetail>(
           `/tickets/${ticketId}`,
-          config!
+          config
         );
       } catch (err) {
-        const msg = (err as Error).message;
-        if (msg.includes('404')) {
+        if (err instanceof ApiError && err.statusCode === 404) {
           console.error(chalk.red(`Ticket not found: ${ticketId}`));
           process.exit(1);
         }
@@ -58,7 +53,7 @@ export const executeCommand = new Command('execute')
       const icon = statusIcon(ticket.status);
 
       try {
-        await ApiService.patch(`/tickets/${ticketId}`, { assignedTo: config!.userId }, config!);
+        await ApiService.patch(`/tickets/${ticketId}`, { assignedTo: config.userId }, config);
       } catch {
         process.stderr.write(chalk.dim('  Warning: Could not auto-assign ticket.\n'));
       }

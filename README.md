@@ -1,11 +1,11 @@
-# @forge/cli
+# @anthropic-forge/cli
 
 CLI for Forge — authenticate, browse tickets, and execute AI-assisted implementations via MCP.
 
 ## Installation
 
 ```bash
-npm install -g @forge/cli
+npm install -g @anthropic-forge/cli
 ```
 
 Requires Node.js 20+.

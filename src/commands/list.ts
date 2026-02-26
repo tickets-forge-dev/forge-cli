@@ -1,8 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as ConfigService from '../services/config.service';
+import { requireAuth } from '../middleware/auth-guard';
 import type { ForgeConfig } from '../services/config.service';
-import { isLoggedIn } from '../services/auth.service';
 import * as ApiService from '../services/api.service';
 import { formatTicketRow, statusIcon, STATUS_DISPLAY_NAMES } from '../ui/formatters';
 import { AECStatus, type TicketListItem, type TicketDetail } from '../types/ticket';
@@ -23,15 +22,10 @@ export const listCommand = new Command('list')
   .option('--all', 'Show all team tickets, not just assigned to me')
   .action(async (options: { all?: boolean }) => {
     try {
-      const config = await ConfigService.load();
-
-      if (!isLoggedIn(config)) {
-        console.error(chalk.red('Not logged in. Run `forge login` first.'));
-        process.exit(1);
-      }
+      const config = await requireAuth();
 
       const params: Record<string, string> = {
-        teamId: config!.teamId,
+        teamId: config.teamId,
       };
 
       if (options.all) {
@@ -41,8 +35,8 @@ export const listCommand = new Command('list')
       }
 
       const [tickets, memberNames] = await Promise.all([
-        ApiService.get<TicketListItem[]>('/tickets', config!, params),
-        fetchMemberNames(config!),
+        ApiService.get<TicketListItem[]>('/tickets', config, params),
+        fetchMemberNames(config),
       ]);
 
       // Non-TTY: plain output for piping/scripting
@@ -61,7 +55,7 @@ export const listCommand = new Command('list')
         process.exit(0);
       }
 
-      await renderInteractiveList(tickets, options.all ?? false, memberNames, config!);
+      await renderInteractiveList(tickets, options.all ?? false, memberNames, config);
     } catch (err) {
       console.error(chalk.red(`Error: ${(err as Error).message}`));
       process.exit(2);

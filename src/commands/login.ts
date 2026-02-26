@@ -76,8 +76,16 @@ export const loginCommand = new Command('login')
         } else {
           console.log(chalk.dim('  ℹ  Run `forge mcp install` to enable MCP in Claude Code'));
         }
-      } catch {
-        // MCP setup errors must never cause login to fail
+      } catch (mcpErr) {
+        // MCP setup errors must never cause login to fail — but surface a hint
+        console.log(
+          chalk.yellow(
+            `  ⚠  Could not auto-register MCP server: ${(mcpErr as Error).message}`
+          )
+        );
+        console.log(
+          chalk.dim('    Run `forge mcp install` manually to set it up.')
+        );
       }
 
       process.exit(0);
