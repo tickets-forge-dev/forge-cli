@@ -188,7 +188,7 @@ describe('ForgeMCPServer', () => {
       // ListTools is the first handler registered
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[0][1];
       const result = await handler({});
-      expect(result.tools).toHaveLength(6);
+      expect(result.tools).toHaveLength(7);
       const names = result.tools.map((t: { name: string }) => t.name);
       expect(names).toContain('get_ticket_context');
       expect(names).toContain('get_file_changes');
@@ -196,6 +196,7 @@ describe('ForgeMCPServer', () => {
       expect(names).toContain('update_ticket_status');
       expect(names).toContain('submit_review_session');
       expect(names).toContain('list_tickets');
+      expect(names).toContain('start_implementation');
     });
 
     it('returns both prompts from ListPrompts handler', async () => {
@@ -205,10 +206,11 @@ describe('ForgeMCPServer', () => {
       // ListPrompts is the second handler registered
       const handler = vi.mocked(instance.setRequestHandler).mock.calls[1][1];
       const result = await handler({});
-      expect(result.prompts).toHaveLength(4);
+      expect(result.prompts).toHaveLength(5);
       const names = result.prompts.map((p: { name: string }) => p.name);
       expect(names).toContain('forge-execute');
       expect(names).toContain('review');
+      expect(names).toContain('forge-develop');
     });
   });
 

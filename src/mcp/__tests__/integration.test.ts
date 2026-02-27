@@ -59,6 +59,7 @@ vi.mock('simple-git', () => ({
 
 vi.mock('../../agents/dev-executor.md?raw', () => ({ default: '# Dev Executor Guide' }));
 vi.mock('../../agents/dev-reviewer.md?raw', () => ({ default: '# Dev Reviewer Guide' }));
+vi.mock('../../agents/dev-implementer.md?raw', () => ({ default: '# Dev Implementer Guide' }));
 
 // ── Imports (after mocks) ────────────────────────────────────────────────────
 
@@ -133,13 +134,13 @@ describe('MCP Integration: server → real handlers', () => {
   // ── Tool listing ────────────────────────────────────────────────────────────
 
   describe('ListTools', () => {
-    it('lists all 6 registered tools with correct metadata', async () => {
+    it('lists all 7 registered tools with correct metadata', async () => {
       new ForgeMCPServer(mockConfig);
       const handler = getListToolsHandler();
 
       const result = await handler({}) as { tools: Array<{ name: string; description: string; inputSchema: unknown }> };
 
-      expect(result.tools).toHaveLength(6);
+      expect(result.tools).toHaveLength(7);
       const names = result.tools.map(t => t.name);
       expect(names).toContain('get_ticket_context');
       expect(names).toContain('get_file_changes');
@@ -147,6 +148,7 @@ describe('MCP Integration: server → real handlers', () => {
       expect(names).toContain('update_ticket_status');
       expect(names).toContain('submit_review_session');
       expect(names).toContain('list_tickets');
+      expect(names).toContain('start_implementation');
     });
 
     it('each tool has a non-empty description', async () => {
@@ -404,6 +406,95 @@ describe('MCP Integration: server → real handlers', () => {
       }) as { isError: boolean; content: Array<{ text: string }> };
 
       expect(result.isError).toBe(true);
+    });
+  });
+
+  // ── start_implementation ────────────────────────────────────────────────────
+
+  describe('start_implementation → real handler', () => {
+    it('posts branch + qaItems to backend and returns success response', async () => {
+      vi.mocked(post).mockResolvedValue({
+        success: true,
+        ticketId: 'T-001',
+        branchName: 'forge/T-001-add-login',
+        status: 'executing',
+      });
+      new ForgeMCPServer(mockConfig);
+      const callTool = getCallToolHandler();
+
+      const result = await callTool({
+        params: {
+          name: 'start_implementation',
+          arguments: {
+            ticketId: 'T-001',
+            branchName: 'forge/T-001-add-login',
+            qaItems: [{ question: 'Pattern?', answer: 'Repository' }],
+          },
+        },
+      }) as { content: Array<{ text: string }>; isError?: boolean };
+
+      expect(result.isError).toBeUndefined();
+      const text = result.content[0].text;
+      expect(text).toContain('T-001');
+      expect(text).toContain('forge/T-001-add-login');
+      expect(post).toHaveBeenCalledWith(
+        '/tickets/T-001/start-implementation',
+        {
+          branchName: 'forge/T-001-add-login',
+          qaItems: [{ question: 'Pattern?', answer: 'Repository' }],
+        },
+        mockConfig
+      );
+    });
+
+    it('returns validation error when branchName does not start with forge/', async () => {
+      new ForgeMCPServer(mockConfig);
+      const callTool = getCallToolHandler();
+
+      const result = await callTool({
+        params: {
+          name: 'start_implementation',
+          arguments: { ticketId: 'T-001', branchName: 'feature/wrong' },
+        },
+      }) as { isError: boolean; content: Array<{ text: string }> };
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('forge/');
+      expect(post).not.toHaveBeenCalled();
+    });
+
+    it('propagates backend error as isError response', async () => {
+      vi.mocked(post).mockRejectedValue(new Error('API error 409: Conflict'));
+      new ForgeMCPServer(mockConfig);
+      const callTool = getCallToolHandler();
+
+      const result = await callTool({
+        params: {
+          name: 'start_implementation',
+          arguments: { ticketId: 'T-001', branchName: 'forge/T-001-test' },
+        },
+      }) as { isError: boolean; content: Array<{ text: string }> };
+
+      expect(result.isError).toBe(true);
+    });
+  });
+
+  // ── forge-develop prompt ─────────────────────────────────────────────────────
+
+  describe('GetPrompt dispatch → forge-develop', () => {
+    it('forge-develop returns messages array with implementer guide', async () => {
+      vi.mocked(get).mockResolvedValue(mockTicket);
+      new ForgeMCPServer(mockConfig);
+      const getPrompt = getGetPromptHandler();
+
+      const result = await getPrompt({
+        params: { name: 'forge-develop', arguments: { ticketId: 'T-001' } },
+      }) as { messages: Array<{ role: string; content: { type: string; text: string } }> };
+
+      expect(Array.isArray(result.messages)).toBe(true);
+      expect(result.messages.length).toBeGreaterThan(0);
+      expect(result.messages[0].role).toBe('user');
+      expect(result.messages[0].content.text).toContain('<agent_guide>');
     });
   });
 
