@@ -9,6 +9,7 @@ import { executeCommand } from './commands/execute';
 import { mcpCommand } from './commands/mcp';
 import { whoamiCommand } from './commands/whoami';
 import { doctorCommand } from './commands/doctor';
+import { developCommand } from './commands/develop';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
@@ -28,6 +29,7 @@ program.addCommand(reviewCommand);
 program.addCommand(executeCommand);
 program.addCommand(mcpCommand);
 program.addCommand(whoamiCommand);
+program.addCommand(developCommand);
 program.addCommand(doctorCommand);
 
 program.addHelpText('after', `

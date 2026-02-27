@@ -9,6 +9,10 @@ const STATUS_ICONS: Record<AECStatus, string> = {
   [AECStatus.CREATED]: '📝',
   [AECStatus.DRIFTED]: '⚠️ ',
   [AECStatus.COMPLETE]: '✅',
+  [AECStatus.DEV_REFINING]: '🔧',
+  [AECStatus.REVIEW]: '👀',
+  [AECStatus.FORGED]: '🚀',
+  [AECStatus.EXECUTING]: '⚡',
 };
 
 /** Human-readable display names for all backend statuses (not the lifecycle steps). */
@@ -20,6 +24,10 @@ export const STATUS_DISPLAY_NAMES: Record<AECStatus, string> = {
   [AECStatus.CREATED]: 'Exported',
   [AECStatus.DRIFTED]: 'Drifted',
   [AECStatus.COMPLETE]: 'Done',
+  [AECStatus.DEV_REFINING]: 'Dev-Refine',
+  [AECStatus.REVIEW]: 'Review',
+  [AECStatus.FORGED]: 'Forged',
+  [AECStatus.EXECUTING]: 'Executing',
 };
 
 export function statusIcon(status: AECStatus): string {

@@ -8,6 +8,11 @@ export enum AECStatus {
   CREATED = 'created',
   DRIFTED = 'drifted',
   COMPLETE = 'complete',
+  // New status values (AEC status lifecycle simplification)
+  DEV_REFINING = 'dev-refining',
+  REVIEW = 'review',
+  FORGED = 'forged',
+  EXECUTING = 'executing',
 }
 
 export type TicketType = 'feature' | 'bug' | 'task';

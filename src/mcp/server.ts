@@ -47,6 +47,14 @@ import {
   forgeExecPromptDefinition,
   handleForgeExec,
 } from './prompts/forge-exec.js';
+import {
+  forgeDevelopPromptDefinition,
+  handleForgeDevelop,
+} from './prompts/forge-develop.js';
+import {
+  startImplementationToolDefinition,
+  handleStartImplementation,
+} from './tools/start-implementation.js';
 
 export class ForgeMCPServer {
   private server: Server;
@@ -59,11 +67,11 @@ export class ForgeMCPServer {
     );
 
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [getTicketContextToolDefinition, getFileChangesToolDefinition, getRepositoryContextToolDefinition, updateTicketStatusToolDefinition, submitReviewSessionToolDefinition, listTicketsToolDefinition],
+      tools: [getTicketContextToolDefinition, getFileChangesToolDefinition, getRepositoryContextToolDefinition, updateTicketStatusToolDefinition, submitReviewSessionToolDefinition, listTicketsToolDefinition, startImplementationToolDefinition],
     }));
 
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => ({
-      prompts: [forgeListPromptDefinition, forgeExecPromptDefinition, forgeExecutePromptDefinition, forgeReviewPromptDefinition],
+      prompts: [forgeListPromptDefinition, forgeExecPromptDefinition, forgeExecutePromptDefinition, forgeReviewPromptDefinition, forgeDevelopPromptDefinition],
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,6 +86,8 @@ export class ForgeMCPServer {
           return handleForgeList(args as Record<string, unknown>, this.config);
         case 'forge-exec':
           return handleForgeExec(args as Record<string, unknown>, this.config);
+        case 'forge-develop':
+          return handleForgeDevelop(args as Record<string, unknown>, this.config);
         default:
           return {
             messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Error: Unknown prompt: ${name}` } }],
@@ -117,6 +127,11 @@ export class ForgeMCPServer {
           );
         case 'list_tickets':
           return handleListTickets(
+            args as Record<string, unknown>,
+            this.config
+          );
+        case 'start_implementation':
+          return handleStartImplementation(
             args as Record<string, unknown>,
             this.config
           );
