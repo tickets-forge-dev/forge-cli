@@ -1,6 +1,6 @@
 {
   "name": "@anthropic-forge/cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "CLI for Forge — authenticate, browse tickets, and execute AI-assisted implementations via MCP",
   "license": "MIT",
   "type": "module",
